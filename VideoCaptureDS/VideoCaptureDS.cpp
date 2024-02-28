@@ -379,18 +379,20 @@ void VideoCaptureDS::capture()
 	{
 	case CameraMode::RGB:
 		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2RGB);
-		jpeg.encode_jpeg_rgb24(image_to_jpeg.data, width, height, 1.0);
+		jpeg.encode_jpeg_rgb24(image_to_jpeg.data, width, height, 50.0);
 		break;
 	case CameraMode::BGR:
-		jpeg.encode_jpeg_rgb24(image_to_show->data, width, height, 1.0);
+		jpeg.encode_jpeg_rgb24(image_to_show->data, width, height, 50.0);
 		break;
 	case CameraMode::Grayscale:
-		jpeg.encode_jpeg_gray8(image_gray.data, width, height, 1.0);
+		jpeg.encode_jpeg_gray8(image_gray.data, width, height, 50.0);
 		break;
 	default:
 		break;
 	}
 	
+	cv::imshow("image", image_to_jpeg);
+
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
 //--------------------------------------------------------
