@@ -390,8 +390,6 @@ void VideoCaptureDS::capture()
 	default:
 		break;
 	}
-	
-	cv::imshow("image", image_to_jpeg);
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
