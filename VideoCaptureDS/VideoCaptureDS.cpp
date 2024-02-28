@@ -296,7 +296,7 @@ void VideoCaptureDS::read_Jpeg(Tango::Attribute &attr)
 	DEBUG_STREAM << "VideoCaptureDS::read_Jpeg(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::read_Jpeg) ENABLED START -----*/
 	//	Set the attribute value
-	attr.set_value(attr_Jpeg_read);
+	attr.set_value(&jpeg);
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Jpeg
 }
@@ -379,13 +379,13 @@ void VideoCaptureDS::capture()
 	{
 	case CameraMode::RGB:
 		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2RGB);
-		//cv::imencode(".jpeg", image_to_jpeg, //buff// , jpeg_incode_params);
+		jpeg.encode_jpeg_rgb24(image_to_jpeg.data, width, height, 1.0);
 		break;
 	case CameraMode::BGR:
-		//cv::imencode(".jpeg", *image_to_show, //buff// , jpeg_incode_params);
+		jpeg.encode_jpeg_rgb24(image_to_show->data, width, height, 1.0);
 		break;
 	case CameraMode::Grayscale:
-		//cv::imencode(".jpeg", image_gray, //buff// , jpeg_incode_params);
+		jpeg.encode_jpeg_gray8(image_gray.data, width, height, 1.0);
 		break;
 	default:
 		break;

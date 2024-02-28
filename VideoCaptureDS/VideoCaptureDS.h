@@ -72,6 +72,8 @@ cv::Mat* image_no_image;
 // Parameters for jpeg incoding with opencv
 std::vector<int> jpeg_incode_params;
 
+Tango::EncodedAttribute jpeg;
+
 enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale } cam_mode;
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::Data Members
