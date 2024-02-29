@@ -77,7 +77,7 @@ class FrameAttrib: public Tango::ImageAttr
 {
 public:
 	FrameAttrib():ImageAttr("Frame",
-			Tango::DEV_UCHAR, Tango::READ, 1280, 720) {};
+			Tango::DEV_UCHAR, Tango::READ, 3840, 720) {};
 	~FrameAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<VideoCaptureDS *>(dev))->read_Frame(att);}

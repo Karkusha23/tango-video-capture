@@ -70,7 +70,7 @@ cv::VideoCapture* cv_cam;
 cv::Mat* image_no_image;
 
 // Parameters for jpeg incoding with opencv
-std::vector<int> jpeg_incode_params;
+//std::vector<int> jpeg_incode_params;
 
 Tango::EncodedAttribute jpeg;
 
@@ -168,7 +168,7 @@ public:
  *	Description: 
  *
  *	Data type:	Tango::DevUChar
- *	Attr type:	Image max = 1280 x 720
+ *	Attr type:	Image max = 3840 x 720
  */
 	virtual void read_Frame(Tango::Attribute &attr);
 	virtual bool is_Frame_allowed(Tango::AttReqType type);

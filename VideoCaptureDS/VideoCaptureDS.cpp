@@ -66,7 +66,7 @@ static const char *RcsId = "$Id:  $";
 //  Attributes managed are:
 //================================================================
 //  Jpeg   |  Tango::DevEncoded	Scalar
-//  Frame  |  Tango::DevUChar	Image  ( max = 1280 x 720)
+//  Frame  |  Tango::DevUChar	Image  ( max = 3840 x 720)
 //================================================================
 
 namespace VideoCaptureDS_ns
@@ -150,14 +150,12 @@ void VideoCaptureDS::init_device()
 	get_device_property();
 	
 	attr_Jpeg_read = new Tango::DevEncoded[1];
-	attr_Frame_read = new Tango::DevUChar[1280*720];
+	attr_Frame_read = new Tango::DevUChar[3840*720];
 	/*----- PROTECTED REGION ID(VideoCaptureDS::init_device) ENABLED START -----*/
-	
+
 	cv_cam = nullptr;
 	image_no_image = nullptr;
 	update_cv_cam();
-
-	jpeg_incode_params = { cv::IMWRITE_JPEG_QUALITY, 80 };
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::init_device
 }
@@ -306,7 +304,7 @@ void VideoCaptureDS::read_Jpeg(Tango::Attribute &attr)
  *	Description: 
  *
  *	Data type:	Tango::DevUChar
- *	Attr type:	Image max = 1280 x 720
+ *	Attr type:	Image max = 3840 x 720
  */
 //--------------------------------------------------------
 void VideoCaptureDS::read_Frame(Tango::Attribute &attr)
@@ -315,7 +313,7 @@ void VideoCaptureDS::read_Frame(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(VideoCaptureDS::read_Frame) ENABLED START -----*/
 	//	Set the attribute value
 
-	attr.set_value(attr_Frame_read, width, height);
+	attr.set_value(attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Frame
 }
@@ -362,35 +360,33 @@ void VideoCaptureDS::capture()
 		image_to_show = image_cam.empty() ? image_no_image : &image_cam;
 	}
 
-	cv::Mat image_gray;
-
-	cv::cvtColor(*image_to_show, image_gray, cv::COLOR_BGR2GRAY);
-
-	int size_gray = image_gray.total() * image_gray.elemSize() * sizeof(uchar);
-
-	if (size_gray <= 1280 * 720)
-	{
-		std::memcpy(attr_Frame_read, image_gray.data, size_gray);
-	}
-
-	cv::Mat image_to_jpeg;
+	cv::Mat image_converted;
 
 	switch (cam_mode)
 	{
 	case CameraMode::RGB:
-		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2RGB);
-		jpeg.encode_jpeg_rgb24(image_to_jpeg.data, width, height, 50.0);
+		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2RGB);
+		jpeg.encode_jpeg_rgb24(image_converted.data, width, height, 50.0);
+		image_to_show = &image_converted;
 		break;
 	case CameraMode::BGR:
 		jpeg.encode_jpeg_rgb24(image_to_show->data, width, height, 50.0);
 		break;
 	case CameraMode::Grayscale:
-		jpeg.encode_jpeg_gray8(image_gray.data, width, height, 50.0);
+		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2GRAY);
+		jpeg.encode_jpeg_gray8(image_converted.data, width, height, 50.0);
+		image_to_show = &image_converted;
 		break;
 	default:
 		break;
 	}
 
+	int size = image_to_show->total() * image_to_show->elemSize() * sizeof(uchar);
+
+	if (size <= 3840 * 720)
+	{
+		std::memcpy(attr_Frame_read, image_to_show->data, size);
+	}
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
 //--------------------------------------------------------
@@ -433,6 +429,9 @@ void VideoCaptureDS::update_cv_cam()
 	delete image_no_image;
 
 	cv_cam = new cv::VideoCapture(source);
+
+	width = width < 3840 ? width : 3840;
+	height = height < 720 ? height : 720;
 
 	if (!cv_cam->isOpened())
 	{
