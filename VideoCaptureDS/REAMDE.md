@@ -1,1 +1,0 @@
-VideoCapture Tango device
