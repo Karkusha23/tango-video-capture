@@ -361,31 +361,37 @@ void VideoCaptureDS::capture()
 	}
 
 	cv::Mat image_converted;
+	cv::Mat image_to_jpeg;
 
 	switch (cam_mode)
 	{
 	case CameraMode::RGB:
 		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2RGB);
-		jpeg.encode_jpeg_rgb24(image_converted.data, width, height, 50.0);
+		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2RGBA);
+		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, 25.0);
 		image_to_show = &image_converted;
 		break;
 	case CameraMode::BGR:
-		jpeg.encode_jpeg_rgb24(image_to_show->data, width, height, 50.0);
+		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2BGRA);
+		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, 25.0);
 		break;
 	case CameraMode::Grayscale:
 		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2GRAY);
-		jpeg.encode_jpeg_gray8(image_converted.data, width, height, 50.0);
+		jpeg.encode_jpeg_gray8(image_converted.data, width, height, 25.0);
 		image_to_show = &image_converted;
 		break;
 	default:
 		break;
 	}
 
-	int size = image_to_show->total() * image_to_show->elemSize() * sizeof(uchar);
-
-	if (size <= 3840 * 720)
+	if (cam_mode != CameraMode::None)
 	{
-		std::memcpy(attr_Frame_read, image_to_show->data, size);
+		int size = image_to_show->total() * image_to_show->elemSize() * sizeof(uchar);
+
+		if (size <= 3840 * 720)
+		{
+			std::memcpy(attr_Frame_read, image_to_show->data, size);
+		}
 	}
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
