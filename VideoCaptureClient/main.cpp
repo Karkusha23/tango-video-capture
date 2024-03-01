@@ -15,19 +15,24 @@ int main(int argc, char* argv[])
 		Tango::DeviceProxy device(argc < 2 ? "CVCam/test/0" : argv[1]);
 
 		std::cout << "Ping time: " << device.ping() << std::endl;
-		std::cout << "Device name:" << device.name() << std::endl;
+		std::cout << "Device name: " << device.name() << std::endl;
 
-		Tango::DbData properties;
-		properties.push_back(Tango::DbDatum("Mode"));
-		device.get_property(properties);
-
-		std::cout << properties.size() << std::endl;
-
-		Tango::DbData mode_db;
-		std::string mode;
-		device.get_property(std::string("Mode"), mode_db);
-		properties[0] >> mode;
-		std::cout << "Camera mode: " << mode << std::endl;
+		std::vector<std::string> device_properties;
+		device.get_property_list("*", device_properties);
+		std::cout << "Device Properties:" << std::endl;
+		for (std::string& device_property : device_properties)
+		{
+			std::cout << '\t' << device_property << ": ";
+			Tango::DbData property_data;
+			device.get_property(device_property, property_data);
+			for (Tango::DbDatum& data : property_data)
+			{
+				std::string outstring;
+				data >> outstring;
+				std::cout << outstring << ' ';
+			}
+			std::cout << std::endl;
+		}
 
 		Tango::DeviceAttribute devAttr;
 		Tango::EncodedAttribute enAttr;
