@@ -88,6 +88,8 @@ public:
 	Tango::DevUShort	height;
 	//	Width:	
 	Tango::DevUShort	width;
+	//	JpegQuality:	
+	Tango::DevUShort	jpegQuality;
 
 //	Attribute data members
 public:

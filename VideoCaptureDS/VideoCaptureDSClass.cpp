@@ -319,6 +319,20 @@ void VideoCaptureDSClass::set_default_property()
 	}
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "JpegQuality";
+	prop_desc = "";
+	prop_def  = "50";
+	vect_data.clear();
+	vect_data.push_back("50");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
 }
 
 //--------------------------------------------------------
@@ -545,6 +559,7 @@ void VideoCaptureDSClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Polled
 	jpeg->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	jpeg->set_change_event(true, false);
 	att_list.push_back(jpeg);
 
 	//	Attribute : Frame
@@ -569,6 +584,7 @@ void VideoCaptureDSClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Polled
 	frame->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	frame->set_change_event(true, false);
 	att_list.push_back(frame);
 
 

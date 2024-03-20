@@ -181,6 +181,7 @@ void VideoCaptureDS::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("Mode"));
 	dev_prop.push_back(Tango::DbDatum("Height"));
 	dev_prop.push_back(Tango::DbDatum("Width"));
+	dev_prop.push_back(Tango::DbDatum("JpegQuality"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -238,6 +239,17 @@ void VideoCaptureDS::get_device_property()
 		}
 		//	And try to extract Width value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  width;
+
+		//	Try to initialize JpegQuality from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  jpegQuality;
+		else {
+			//	Try to initialize JpegQuality from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  jpegQuality;
+		}
+		//	And try to extract JpegQuality value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  jpegQuality;
 
 	}
 
@@ -349,7 +361,7 @@ void VideoCaptureDS::capture()
 	cv::Mat* image_to_show;
 	cv::Mat image_cam;
 
-	if (!cv_cam || !cv_cam->isOpened())
+	if (get_state() == Tango::FAULT || !cv_cam || !cv_cam->isOpened())
 	{
 		image_to_show = image_no_image;
 	}
@@ -368,21 +380,24 @@ void VideoCaptureDS::capture()
 	case CameraMode::RGB:
 		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2RGB);
 		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2RGBA);
-		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, 25.0);
+		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
 		image_to_show = &image_converted;
 		break;
 	case CameraMode::BGR:
 		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2BGRA);
-		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, 25.0);
+		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
 		break;
 	case CameraMode::Grayscale:
 		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2GRAY);
-		jpeg.encode_jpeg_gray8(image_converted.data, width, height, 25.0);
+		jpeg.encode_jpeg_gray8(image_converted.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
 		image_to_show = &image_converted;
 		break;
 	default:
 		break;
 	}
+
+	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
+	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.get_data(), jpeg.get_size());
 
 	if (cam_mode != CameraMode::None)
 	{
@@ -391,8 +406,11 @@ void VideoCaptureDS::capture()
 		if (size <= 3840 * 720)
 		{
 			std::memcpy(attr_Frame_read, image_to_show->data, size);
+			push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
 		}
 	}
+
+	push_change_event("Jpeg", attr_Jpeg_read, jpeg.get_size());
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
 //--------------------------------------------------------
@@ -449,6 +467,11 @@ void VideoCaptureDS::update_cv_cam()
 
 		cv_cam->set(cv::CAP_PROP_FRAME_HEIGHT, height);
 		cv_cam->set(cv::CAP_PROP_FRAME_WIDTH, width);
+
+		if (cv_cam->get(cv::CAP_PROP_FRAME_HEIGHT) != height || cv_cam->get(cv::CAP_PROP_FRAME_WIDTH) != width)
+		{
+			set_state(Tango::FAULT);
+		}
 	}
 
 	image_no_image = new cv::Mat(200, 270, CV_8UC3, cv::Scalar(255, 0, 0));
