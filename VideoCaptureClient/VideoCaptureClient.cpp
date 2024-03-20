@@ -45,3 +45,18 @@ vcc::CameraMode vcc::get_device_camera_mode(Tango::DeviceProxy* device)
 
 	return CameraMode::None;
 }
+
+int vcc::get_device_int_property(Tango::DeviceProxy* device, const std::string& name)
+{
+	Tango::DbData val_db;
+	device->get_property(std::string(name), val_db);
+	std::string mode;
+	val_db[0] >> mode;
+
+	return std::stoi(mode);
+}
+
+void vcc::JpegCallBack::push_event(Tango::EventData* event_data)
+{
+	fun_(event_data);
+}
