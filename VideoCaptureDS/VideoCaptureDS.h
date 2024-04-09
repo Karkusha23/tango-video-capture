@@ -44,6 +44,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#include "MyThread.h"
+
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS.h
 
@@ -75,6 +77,8 @@ cv::Mat* image_no_image;
 Tango::EncodedAttribute jpeg;
 
 enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale } cam_mode;
+
+MyThread* myThread;
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::Data Members
 

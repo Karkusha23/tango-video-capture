@@ -121,7 +121,15 @@ void VideoCaptureDS::delete_device()
 {
 	DEBUG_STREAM << "VideoCaptureDS::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::delete_device) ENABLED START -----*/
-	
+
+	myThread->stop();
+
+	void* ptr;
+	DEBUG_STREAM << "Waiting for my thread to exit" << std::endl;
+	myThread->join(&ptr);
+	DEBUG_STREAM << "My thread stopped.." << std::endl;
+
+	delete myThread;
 	delete cv_cam;
 	delete image_no_image;
 	
@@ -156,6 +164,8 @@ void VideoCaptureDS::init_device()
 	cv_cam = nullptr;
 	image_no_image = nullptr;
 	update_cv_cam();
+
+	myThread = new MyThread(this);
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::init_device
 }
