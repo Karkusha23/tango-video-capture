@@ -64,21 +64,27 @@ class VideoCaptureDS : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(VideoCaptureDS::Data Members) ENABLED START -----*/
+public:
 
-// Camera
-cv::VideoCapture* cv_cam;
+	enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale };
 
-// Image that is shown if cannot get image from camera
-cv::Mat* image_no_image;
+private:
 
-// Parameters for jpeg incoding with opencv
-//std::vector<int> jpeg_incode_params;
+	// Camera
+	//cv::VideoCapture* cv_cam;
 
-Tango::EncodedAttribute jpeg;
+	// Image that is shown if cannot get image from camera
+	//cv::Mat* image_no_image;
 
-enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale } cam_mode;
+	// Parameters for jpeg incoding with opencv
+	//std::vector<int> jpeg_incode_params;
 
-MyThread* myThread;
+	CameraMode cam_mode;
+
+	cv::Mat image_to_show;
+	Tango::EncodedAttribute jpeg;
+
+	class MyThread* myThread;
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::Data Members
 
@@ -219,7 +225,13 @@ public:
 
 /*----- PROTECTED REGION ID(VideoCaptureDS::Additional Method prototypes) ENABLED START -----*/
 
+public:
+
+	//void execute_capture(cv::Mat* image, Tango::EncodedAttribute* jpeg);
+
 private:
+
+	void stop_cam_thread();
 
 	// Recreating the video capture according to device properties
 	void update_cv_cam();

@@ -122,16 +122,10 @@ void VideoCaptureDS::delete_device()
 	DEBUG_STREAM << "VideoCaptureDS::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::delete_device) ENABLED START -----*/
 
-	myThread->stop();
+	stop_cam_thread();
 
-	void* ptr;
-	DEBUG_STREAM << "Waiting for my thread to exit" << std::endl;
-	myThread->join(&ptr);
-	DEBUG_STREAM << "My thread stopped.." << std::endl;
-
-	delete myThread;
-	delete cv_cam;
-	delete image_no_image;
+	//delete cv_cam;
+	//delete image_no_image;
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::delete_device
 	delete[] attr_Jpeg_read;
@@ -161,11 +155,11 @@ void VideoCaptureDS::init_device()
 	attr_Frame_read = new Tango::DevUChar[3840*720];
 	/*----- PROTECTED REGION ID(VideoCaptureDS::init_device) ENABLED START -----*/
 
-	cv_cam = nullptr;
-	image_no_image = nullptr;
-	update_cv_cam();
+	//cv_cam = nullptr;
+	//image_no_image = nullptr;
+	myThread = nullptr;
 
-	myThread = new MyThread(this);
+	update_cv_cam();
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::init_device
 }
@@ -368,59 +362,31 @@ void VideoCaptureDS::capture()
 	DEBUG_STREAM << "VideoCaptureDS::Capture()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::capture) ENABLED START -----*/
 
-	cv::Mat* image_to_show;
-	cv::Mat image_cam;
+	int status = 0;
 
-	if (get_state() == Tango::FAULT || !cv_cam || !cv_cam->isOpened())
-	{
-		image_to_show = image_no_image;
-	}
-	else
-	{
-		cv_cam->read(image_cam);
+	myThread->execute_capture(&image_to_show, &jpeg, &status);
 
-		image_to_show = image_cam.empty() ? image_no_image : &image_cam;
+	while (!status)
+	{
+
 	}
 
-	cv::Mat image_converted;
-	cv::Mat image_to_jpeg;
-
-	switch (cam_mode)
+	if (cam_mode != CameraMode::None)
 	{
-	case CameraMode::RGB:
-		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2RGB);
-		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2RGBA);
-		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
-		image_to_show = &image_converted;
-		break;
-	case CameraMode::BGR:
-		cv::cvtColor(*image_to_show, image_to_jpeg, cv::COLOR_BGR2BGRA);
-		jpeg.encode_jpeg_rgb32(image_to_jpeg.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
-		break;
-	case CameraMode::Grayscale:
-		cv::cvtColor(*image_to_show, image_converted, cv::COLOR_BGR2GRAY);
-		jpeg.encode_jpeg_gray8(image_converted.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
-		image_to_show = &image_converted;
-		break;
-	default:
-		break;
+		int size = image_to_show.total() * image_to_show.elemSize() * sizeof(uchar);
+
+		if (size <= 3840 * 720)
+		{
+			std::memcpy(attr_Frame_read, image_to_show.data, size);
+			push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
+		}
 	}
 
 	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
 	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.get_data(), jpeg.get_size());
 
-	if (cam_mode != CameraMode::None)
-	{
-		int size = image_to_show->total() * image_to_show->elemSize() * sizeof(uchar);
-
-		if (size <= 3840 * 720)
-		{
-			std::memcpy(attr_Frame_read, image_to_show->data, size);
-			push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
-		}
-	}
-
 	push_change_event("Jpeg", attr_Jpeg_read, jpeg.get_size());
+
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
 //--------------------------------------------------------
@@ -457,40 +423,66 @@ void VideoCaptureDS::add_dynamic_commands()
 
 /*----- PROTECTED REGION ID(VideoCaptureDS::namespace_ending) ENABLED START -----*/
 
-void VideoCaptureDS::update_cv_cam()
+/*void VideoCaptureDS::execute_capture(cv::Mat* image, Tango::EncodedAttribute* jpeg)
 {
-	delete cv_cam;
-	delete image_no_image;
+	cv::Mat image_cam;
 
-	cv_cam = new cv::VideoCapture(source);
-
-	width = width < 3840 ? width : 3840;
-	height = height < 720 ? height : 720;
-
-	if (!cv_cam->isOpened())
+	if (get_state() == Tango::FAULT || !cv_cam || !cv_cam->isOpened())
 	{
-		set_state(Tango::FAULT);
+		image = image_no_image;
 	}
 	else
 	{
-		set_state(Tango::ON);
+		cv_cam->read(image_cam);
 
-		cv_cam->set(cv::CAP_PROP_FRAME_HEIGHT, height);
-		cv_cam->set(cv::CAP_PROP_FRAME_WIDTH, width);
-
-		if (cv_cam->get(cv::CAP_PROP_FRAME_HEIGHT) != height || cv_cam->get(cv::CAP_PROP_FRAME_WIDTH) != width)
-		{
-			set_state(Tango::FAULT);
-		}
+		image = image_cam.empty() ? image_no_image : &image_cam;
 	}
 
-	image_no_image = new cv::Mat(200, 270, CV_8UC3, cv::Scalar(255, 0, 0));
-	cv::putText(*image_no_image, "No image", cv::Point(width / 2 - 50, height / 2), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(255, 255, 255));
+	cv::Mat image_converted;
+	cv::Mat image_to_jpeg;
 
-	if (get_state() == Tango::FAULT)
+	switch (cam_mode)
+	{
+	case CameraMode::RGB:
+		cv::cvtColor(*image, image_converted, cv::COLOR_BGR2RGB);
+		cv::cvtColor(*image, image_to_jpeg, cv::COLOR_BGR2RGBA);
+		jpeg->encode_jpeg_rgb32(image_to_jpeg.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
+		image = &image_converted;
+		break;
+	case CameraMode::BGR:
+		cv::cvtColor(*image, image_to_jpeg, cv::COLOR_BGR2BGRA);
+		jpeg->encode_jpeg_rgb32(image_to_jpeg.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
+		break;
+	case CameraMode::Grayscale:
+		cv::cvtColor(*image, image_converted, cv::COLOR_BGR2GRAY);
+		jpeg->encode_jpeg_gray8(image_converted.data, width, height, std::max(1.0, std::min(100.0, double(jpegQuality))));
+		image = &image_converted;
+		break;
+	default:
+		break;
+	}
+}*/
+
+void VideoCaptureDS::stop_cam_thread()
+{
+	if (!myThread)
 	{
 		return;
 	}
+
+	myThread->stop();
+
+	void* ptr;
+	DEBUG_STREAM << "Waiting for my thread to exit" << std::endl;
+	myThread->join(&ptr);
+	DEBUG_STREAM << "My thread stopped.." << std::endl;
+
+	delete myThread;
+}
+
+void VideoCaptureDS::update_cv_cam()
+{
+	stop_cam_thread();
 
 	if (mode == "RGB" || mode == "rgb")
 	{
@@ -508,6 +500,17 @@ void VideoCaptureDS::update_cv_cam()
 	{
 		cam_mode = CameraMode::None;
 		set_state(Tango::FAULT);
+	}
+
+	if (get_state() != Tango::FAULT)
+	{
+		myThread = new MyThread(this, source, width, height, mode, jpegQuality);
+
+		if (myThread->is_failed())
+		{
+			set_state(Tango::FAULT);
+			return;
+		}
 	}
 }
 
