@@ -25,7 +25,7 @@ namespace VideoCaptureDS_ns
 
 		void* run_undetached(void*);
 		void stop();
-		void execute_capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, CameraMode mode, double jpegQuality, bool* status);
+		void execute_capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, CameraMode mode, double jpegQuality, std::atomic_bool* status);
 
 		bool is_failed() const;
 
@@ -52,7 +52,7 @@ namespace VideoCaptureDS_ns
 			Tango::EncodedAttribute* jpeg;
 			CameraMode mode;
 			double jpegQuality;
-			bool* status;
+			std::atomic_bool* status;
 		};
 
 		std::queue<CaptureQuery> queue_;

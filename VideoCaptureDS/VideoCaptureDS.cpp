@@ -367,8 +367,6 @@ void VideoCaptureDS::capture()
 		return;
 	}
 
-	bool status = false;
-
 	VideoCaptureDS_ns::CameraMode newMode;
 
 	switch (cam_mode)
@@ -385,6 +383,8 @@ void VideoCaptureDS::capture()
 	default:
 		break;
 	}
+
+	std::atomic_bool status = ATOMIC_VAR_INIT(false);
 
 	camThread->execute_capture(&image_to_show, &jpeg, newMode, std::max(0, std::min(100, (int)jpegQuality)), &status);
 
