@@ -157,7 +157,7 @@ void VideoCaptureDS::init_device()
 
 	//cv_cam = nullptr;
 	//image_no_image = nullptr;
-	myThread = nullptr;
+	camThread = nullptr;
 
 	update_cv_cam();
 
@@ -362,24 +362,43 @@ void VideoCaptureDS::capture()
 	DEBUG_STREAM << "VideoCaptureDS::Capture()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::capture) ENABLED START -----*/
 
-	int status = 0;
+	if (cam_mode == CameraMode::None)
+	{
+		return;
+	}
 
-	myThread->execute_capture(&image_to_show, &jpeg, &status);
+	bool status = false;
+
+	VideoCaptureDS_ns::CameraMode newMode;
+
+	switch (cam_mode)
+	{
+	case CameraMode::RGB:
+		newMode = VideoCaptureDS_ns::CameraMode::RGB;
+		break;
+	case CameraMode::BGR:
+		newMode = VideoCaptureDS_ns::CameraMode::BGR;
+		break;
+	case CameraMode::Grayscale:
+		newMode = VideoCaptureDS_ns::CameraMode::Grayscale;
+		break;
+	default:
+		break;
+	}
+
+	camThread->execute_capture(&image_to_show, &jpeg, newMode, std::max(0, std::min(100, (int)jpegQuality)), &status);
 
 	while (!status)
 	{
 
 	}
 
-	if (cam_mode != CameraMode::None)
-	{
-		int size = image_to_show.total() * image_to_show.elemSize() * sizeof(uchar);
+	int size = image_to_show.total() * image_to_show.elemSize() * sizeof(uchar);
 
-		if (size <= 3840 * 720)
-		{
-			std::memcpy(attr_Frame_read, image_to_show.data, size);
-			push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
-		}
+	if (size <= 3840 * 720)
+	{
+		std::memcpy(attr_Frame_read, image_to_show.data, size);
+		push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
 	}
 
 	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
@@ -465,19 +484,19 @@ void VideoCaptureDS::add_dynamic_commands()
 
 void VideoCaptureDS::stop_cam_thread()
 {
-	if (!myThread)
+	if (!camThread)
 	{
 		return;
 	}
 
-	myThread->stop();
+	camThread->stop();
 
 	void* ptr;
 	DEBUG_STREAM << "Waiting for my thread to exit" << std::endl;
-	myThread->join(&ptr);
+	camThread->join(&ptr);
 	DEBUG_STREAM << "My thread stopped.." << std::endl;
 
-	delete myThread;
+	delete camThread;
 }
 
 void VideoCaptureDS::update_cv_cam()
@@ -504,14 +523,16 @@ void VideoCaptureDS::update_cv_cam()
 
 	if (get_state() != Tango::FAULT)
 	{
-		myThread = new MyThread(this, source, width, height, mode, jpegQuality);
+		camThread = new CamCaptureThread(this, source, width, height);
 
-		if (myThread->is_failed())
+		if (camThread->is_failed())
 		{
 			set_state(Tango::FAULT);
 			return;
 		}
 	}
+
+	set_state(Tango::ON);
 }
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::namespace_ending

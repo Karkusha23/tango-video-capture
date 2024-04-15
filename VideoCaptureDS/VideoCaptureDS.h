@@ -44,7 +44,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include "MyThread.h"
+#include "CamCaptureThread.h"
 
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS.h
@@ -64,9 +64,6 @@ class VideoCaptureDS : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(VideoCaptureDS::Data Members) ENABLED START -----*/
-public:
-
-	enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale };
 
 private:
 
@@ -79,12 +76,12 @@ private:
 	// Parameters for jpeg incoding with opencv
 	//std::vector<int> jpeg_incode_params;
 
-	CameraMode cam_mode;
+	enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale } cam_mode;
 
 	cv::Mat image_to_show;
 	Tango::EncodedAttribute jpeg;
 
-	class MyThread* myThread;
+	class CamCaptureThread* camThread;
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::Data Members
 
