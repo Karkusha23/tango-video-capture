@@ -386,7 +386,7 @@ void VideoCaptureDS::capture()
 
 	std::atomic_bool status = ATOMIC_VAR_INIT(false);
 
-	camThread->execute_capture(&image_to_show, &jpeg, newMode, std::max(0, std::min(100, (int)jpegQuality)), &status);
+	camThread->capture(&image_to_show, &jpeg, newMode, std::max(0, std::min(100, (int)jpegQuality)), &status);
 
 	while (!status)
 	{

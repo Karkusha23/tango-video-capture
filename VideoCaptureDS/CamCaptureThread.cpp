@@ -93,7 +93,7 @@ namespace VideoCaptureDS_ns
 		local_exit_ = true;
 	}
 
-	void CamCaptureThread::execute_capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, CameraMode mode, double jpegQuality, std::atomic_bool* status)
+	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, CameraMode mode, double jpegQuality, std::atomic_bool* status)
 	{
 		omni_mutex_lock lock(queue_mutex_);
 		queue_.push({ image, jpeg, mode, jpegQuality, status });
