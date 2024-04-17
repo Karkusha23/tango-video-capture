@@ -386,6 +386,8 @@ void VideoCaptureDS::capture()
 
 	std::atomic_bool status = ATOMIC_VAR_INIT(false);
 
+	DEBUG_STREAM << "VideoCaptureDS: Passing capture query to thread" << std::endl;
+
 	camThread->capture(&image_to_show, &jpeg, newMode, std::max(0, std::min(100, (int)jpegQuality)), &status);
 
 	while (!status)
@@ -393,18 +395,28 @@ void VideoCaptureDS::capture()
 
 	}
 
+	DEBUG_STREAM << "VideoCaptureDS: Getting response from thread" << std::endl;
+
 	int size = image_to_show.total() * image_to_show.elemSize() * sizeof(uchar);
 
 	if (size <= 3840 * 720)
 	{
+		DEBUG_STREAM << "VideoCaptureDS: Copying image to device attribute" << std::endl;
+
 		std::memcpy(attr_Frame_read, image_to_show.data, size);
 		push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
 	}
 
+	DEBUG_STREAM << "VideoCaptureDS: Copying jpeg to device attribute" << std::endl;
+
 	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
 	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.get_data(), jpeg.get_size());
 
-	push_change_event("Jpeg", attr_Jpeg_read, jpeg.get_size());
+	DEBUG_STREAM << "VideoCaptureDS: Pushing jpeg change event" << std::endl;
+
+	push_change_event("Jpeg", attr_Jpeg_read);
+
+	DEBUG_STREAM << "VideoCaptureDS: End of capture command" << std::endl;
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
 }
@@ -489,12 +501,17 @@ void VideoCaptureDS::stop_cam_thread()
 		return;
 	}
 
+	DEBUG_STREAM << "VideoCaptureDS: Passing stop query to thread" << std::endl;
+
 	camThread->stop();
 
 	void* ptr;
-	DEBUG_STREAM << "Waiting for my thread to exit" << std::endl;
+
+	DEBUG_STREAM << "VideoCaptureDS: Waiting for thread to exit" << std::endl;
+
 	camThread->join(&ptr);
-	DEBUG_STREAM << "My thread stopped.." << std::endl;
+
+	DEBUG_STREAM << "VideoCaptureDS: Thread stopped" << std::endl;
 
 	delete camThread;
 }
@@ -523,7 +540,11 @@ void VideoCaptureDS::update_cv_cam()
 
 	if (get_state() != Tango::FAULT)
 	{
+		DEBUG_STREAM << "VideoCaptureDS: Creating new thread" << std::endl;
+
 		camThread = new CamCaptureThread(this, source, width, height);
+
+		DEBUG_STREAM << "VideoCaptureDS: New thread created" << std::endl;
 
 		if (camThread->is_failed())
 		{

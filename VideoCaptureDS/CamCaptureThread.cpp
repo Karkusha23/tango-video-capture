@@ -13,13 +13,15 @@ namespace VideoCaptureDS_ns
 
 	CamCaptureThread::~CamCaptureThread()
 	{
+		DEBUG_STREAM << "CamCaptureThread::~CamCaptureThread() entering" << std::endl;
+
 		delete cam_;
 		delete image_no_image;
 	}
 
 	void* CamCaptureThread::run_undetached(void *ptr)
 	{
-		DEBUG_STREAM << "My thread stared!" << endl;
+		DEBUG_STREAM << "CamCaptureThread: Thread stared!" << std::endl;
 
 		while (!local_exit_)
 		{
@@ -33,12 +35,16 @@ namespace VideoCaptureDS_ns
 					continue;
 				}
 
+				DEBUG_STREAM << "CamCaptureThread: Getting query from queue. Total queries: " << queue_.size() << std::endl;
+
 				query = queue_.front();
 				queue_.pop();
 			}
 
 			{
 				omni_mutex_lock lock(cam_mutex_);
+
+				DEBUG_STREAM << "CamCaptureThread: Reading image from webcam" << std::endl;
 
 				if (is_failed_)
 				{
@@ -57,6 +63,8 @@ namespace VideoCaptureDS_ns
 
 			cv::Mat image_converted;
 			cv::Mat image_to_jpeg;
+
+			DEBUG_STREAM << "CamCaptureThread: Processing image" << std::endl;
 
 			switch (query.mode)
 			{
@@ -81,21 +89,29 @@ namespace VideoCaptureDS_ns
 
 			*query.status = true;
 
+			DEBUG_STREAM << "CamCaptureThread: End of capture" << std::endl;
+
 			// Sleep(100); // delay if needed
 		}
 
-		DEBUG_STREAM << "My thread stopped!" << endl;
+		DEBUG_STREAM << "CamCaptureThread: Thread stopped!" << std::endl;
+
 		return 0;
 	}
 
 	void CamCaptureThread::stop()
 	{
 		local_exit_ = true;
+
+		DEBUG_STREAM << "CamCaptureThread: Thread is stopping" << std::endl;
 	}
 
 	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, CameraMode mode, double jpegQuality, std::atomic_bool* status)
 	{
 		omni_mutex_lock lock(queue_mutex_);
+
+		DEBUG_STREAM << "CamCaptureThread: Adding capture query to queue" << std::endl;
+
 		queue_.push({ image, jpeg, mode, jpegQuality, status });
 	}
 
@@ -107,6 +123,8 @@ namespace VideoCaptureDS_ns
 	void CamCaptureThread::connect(int source, int width, int height)
 	{
 		omni_mutex_lock lock(cam_mutex_);
+
+		DEBUG_STREAM << "CamCaptureThread: Connecting to cam" << std::endl;
 
 		delete cam_;
 		delete image_no_image;
