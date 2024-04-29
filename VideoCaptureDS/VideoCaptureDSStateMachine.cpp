@@ -70,6 +70,42 @@ bool VideoCaptureDS::is_Jpeg_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 //--------------------------------------------------------
 /**
+ *	Method      : VideoCaptureDS::is_ContourInfo_allowed()
+ *	Description : Execution allowed for ContourInfo attribute
+ */
+//--------------------------------------------------------
+bool VideoCaptureDS::is_ContourInfo_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for ContourInfo attribute in read access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::ContourInfoStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::ContourInfoStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : VideoCaptureDS::is_Threshold_allowed()
+ *	Description : Execution allowed for Threshold attribute
+ */
+//--------------------------------------------------------
+bool VideoCaptureDS::is_Threshold_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+	//	Not any excluded states for Threshold attribute in Write access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::ThresholdStateAllowed_WRITE) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::ThresholdStateAllowed_WRITE
+
+	//	Not any excluded states for Threshold attribute in read access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::ThresholdStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::ThresholdStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : VideoCaptureDS::is_Frame_allowed()
  *	Description : Execution allowed for Frame attribute
  */

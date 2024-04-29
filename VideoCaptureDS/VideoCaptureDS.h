@@ -44,6 +44,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <vc/contour_info.h>
+
 #include "CamCaptureThread.h"
 
 
@@ -87,20 +89,28 @@ private:
 
 //	Device property data members
 public:
-	//	Source:	
+	//	Source:	Webcam index
 	Tango::DevUShort	source;
-	//	Mode:	
+	//	Mode:	Camera mode
+	//  Values:
+	//  1. RGB or rgb
+	//  2. BGR or bgr
+	//  3. Grayscale or grayscale
 	string	mode;
-	//	Height:	
+	//	Height:	Height of image captured from webcam
 	Tango::DevUShort	height;
-	//	Width:	
+	//	Width:	Width of image captured from webcam
 	Tango::DevUShort	width;
-	//	JpegQuality:	
+	//	JpegQuality:	Quality of jpeg compression of image from webcam
 	Tango::DevUShort	jpegQuality;
+	//	Threshold:	Threshold of contour finding algorithm
+	Tango::DevUShort	threshold;
 
 //	Attribute data members
 public:
 	Tango::DevEncoded	*attr_Jpeg_read;
+	Tango::DevEncoded	*attr_ContourInfo_read;
+	Tango::DevUShort	*attr_Threshold_read;
 	Tango::DevUChar	*attr_Frame_read;
 
 //	Constructors and destructors
@@ -162,6 +172,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : VideoCaptureDS::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute Jpeg related methods
@@ -172,6 +189,25 @@ public:
  */
 	virtual void read_Jpeg(Tango::Attribute &attr);
 	virtual bool is_Jpeg_allowed(Tango::AttReqType type);
+/**
+ *	Attribute ContourInfo related methods
+ *	Description: 
+ *
+ *	Data type:	Tango::DevEncoded
+ *	Attr type:	Scalar
+ */
+	virtual void read_ContourInfo(Tango::Attribute &attr);
+	virtual bool is_ContourInfo_allowed(Tango::AttReqType type);
+/**
+ *	Attribute Threshold related methods
+ *	Description: 
+ *
+ *	Data type:	Tango::DevUShort
+ *	Attr type:	Scalar
+ */
+	virtual void read_Threshold(Tango::Attribute &attr);
+	virtual void write_Threshold(Tango::WAttribute &attr);
+	virtual bool is_Threshold_allowed(Tango::AttReqType type);
 /**
  *	Attribute Frame related methods
  *	Description: 
@@ -198,14 +234,14 @@ public:
 public:
 	/**
 	 *	Command Capture related method
-	 *	Description: 
+	 *	Description: Captures image from webcam
 	 *
 	 */
 	virtual void capture();
 	virtual bool is_Capture_allowed(const CORBA::Any &any);
 	/**
 	 *	Command Reconnect related method
-	 *	Description: 
+	 *	Description: Reconnect to webcam
 	 *
 	 */
 	virtual void reconnect();

@@ -72,6 +72,34 @@ public:
 		{return (static_cast<VideoCaptureDS *>(dev))->is_Jpeg_allowed(ty);}
 };
 
+//	Attribute ContourInfo class definition
+class ContourInfoAttrib: public Tango::Attr
+{
+public:
+	ContourInfoAttrib():Attr("ContourInfo",
+			Tango::DEV_ENCODED, Tango::READ) {};
+	~ContourInfoAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->read_ContourInfo(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<VideoCaptureDS *>(dev))->is_ContourInfo_allowed(ty);}
+};
+
+//	Attribute Threshold class definition
+class ThresholdAttrib: public Tango::Attr
+{
+public:
+	ThresholdAttrib():Attr("Threshold",
+			Tango::DEV_USHORT, Tango::READ_WRITE) {};
+	~ThresholdAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->read_Threshold(att);}
+	virtual void write(Tango::DeviceImpl *dev,Tango::WAttribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->write_Threshold(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<VideoCaptureDS *>(dev))->is_Threshold_allowed(ty);}
+};
+
 //	Attribute Frame class definition
 class FrameAttrib: public Tango::ImageAttr
 {

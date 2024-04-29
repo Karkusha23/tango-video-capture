@@ -264,7 +264,7 @@ void VideoCaptureDSClass::set_default_property()
 
 	//	Set Default device Properties
 	prop_name = "Source";
-	prop_desc = "";
+	prop_desc = "Webcam index";
 	prop_def  = "0";
 	vect_data.clear();
 	vect_data.push_back("0");
@@ -278,7 +278,7 @@ void VideoCaptureDSClass::set_default_property()
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "Mode";
-	prop_desc = "";
+	prop_desc = "Camera mode\nValues:\n1. RGB or rgb\n2. BGR or bgr\n3. Grayscale or grayscale";
 	prop_def  = "RGB";
 	vect_data.clear();
 	vect_data.push_back("RGB");
@@ -292,7 +292,7 @@ void VideoCaptureDSClass::set_default_property()
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "Height";
-	prop_desc = "";
+	prop_desc = "Height of image captured from webcam";
 	prop_def  = "720";
 	vect_data.clear();
 	vect_data.push_back("720");
@@ -306,7 +306,7 @@ void VideoCaptureDSClass::set_default_property()
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "Width";
-	prop_desc = "";
+	prop_desc = "Width of image captured from webcam";
 	prop_def  = "1280";
 	vect_data.clear();
 	vect_data.push_back("1280");
@@ -320,10 +320,24 @@ void VideoCaptureDSClass::set_default_property()
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "JpegQuality";
-	prop_desc = "";
+	prop_desc = "Quality of jpeg compression of image from webcam";
 	prop_def  = "50";
 	vect_data.clear();
 	vect_data.push_back("50");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "Threshold";
+	prop_desc = "Threshold of contour finding algorithm";
+	prop_def  = "25";
+	vect_data.clear();
+	vect_data.push_back("25");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -561,6 +575,54 @@ void VideoCaptureDSClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	jpeg->set_change_event(true, false);
 	att_list.push_back(jpeg);
+
+	//	Attribute : ContourInfo
+	ContourInfoAttrib	*contourinfo = new ContourInfoAttrib();
+	Tango::UserDefaultAttrProp	contourinfo_prop;
+	//	description	not set for ContourInfo
+	//	label	not set for ContourInfo
+	//	unit	not set for ContourInfo
+	//	standard_unit	not set for ContourInfo
+	//	display_unit	not set for ContourInfo
+	//	format	not set for ContourInfo
+	//	max_value	not set for ContourInfo
+	//	min_value	not set for ContourInfo
+	//	max_alarm	not set for ContourInfo
+	//	min_alarm	not set for ContourInfo
+	//	max_warning	not set for ContourInfo
+	//	min_warning	not set for ContourInfo
+	//	delta_t	not set for ContourInfo
+	//	delta_val	not set for ContourInfo
+	
+	contourinfo->set_default_properties(contourinfo_prop);
+	//	Not Polled
+	contourinfo->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(contourinfo);
+
+	//	Attribute : Threshold
+	ThresholdAttrib	*threshold = new ThresholdAttrib();
+	Tango::UserDefaultAttrProp	threshold_prop;
+	//	description	not set for Threshold
+	//	label	not set for Threshold
+	//	unit	not set for Threshold
+	//	standard_unit	not set for Threshold
+	//	display_unit	not set for Threshold
+	//	format	not set for Threshold
+	//	max_value	not set for Threshold
+	//	min_value	not set for Threshold
+	//	max_alarm	not set for Threshold
+	//	min_alarm	not set for Threshold
+	//	max_warning	not set for Threshold
+	//	min_warning	not set for Threshold
+	//	delta_t	not set for Threshold
+	//	delta_val	not set for Threshold
+	
+	threshold->set_default_properties(threshold_prop);
+	//	Not Polled
+	threshold->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(threshold);
 
 	//	Attribute : Frame
 	FrameAttrib	*frame = new FrameAttrib();

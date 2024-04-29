@@ -65,8 +65,10 @@ static const char *RcsId = "$Id:  $";
 //================================================================
 //  Attributes managed are:
 //================================================================
-//  Jpeg   |  Tango::DevEncoded	Scalar
-//  Frame  |  Tango::DevUChar	Image  ( max = 3840 x 720)
+//  Jpeg         |  Tango::DevEncoded	Scalar
+//  ContourInfo  |  Tango::DevEncoded	Scalar
+//  Threshold    |  Tango::DevUShort	Scalar
+//  Frame        |  Tango::DevUChar	Image  ( max = 3840 x 720)
 //================================================================
 
 namespace VideoCaptureDS_ns
@@ -129,6 +131,8 @@ void VideoCaptureDS::delete_device()
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::delete_device
 	delete[] attr_Jpeg_read;
+	delete[] attr_ContourInfo_read;
+	delete[] attr_Threshold_read;
 	delete[] attr_Frame_read;
 }
 
@@ -152,6 +156,8 @@ void VideoCaptureDS::init_device()
 	get_device_property();
 	
 	attr_Jpeg_read = new Tango::DevEncoded[1];
+	attr_ContourInfo_read = new Tango::DevEncoded[1];
+	attr_Threshold_read = new Tango::DevUShort[1];
 	attr_Frame_read = new Tango::DevUChar[3840*720];
 	/*----- PROTECTED REGION ID(VideoCaptureDS::init_device) ENABLED START -----*/
 
@@ -160,6 +166,8 @@ void VideoCaptureDS::init_device()
 	camThread = nullptr;
 
 	update_cv_cam();
+
+	*attr_Threshold_read = threshold;
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::init_device
 }
@@ -186,6 +194,7 @@ void VideoCaptureDS::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("Height"));
 	dev_prop.push_back(Tango::DbDatum("Width"));
 	dev_prop.push_back(Tango::DbDatum("JpegQuality"));
+	dev_prop.push_back(Tango::DbDatum("Threshold"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -255,6 +264,17 @@ void VideoCaptureDS::get_device_property()
 		//	And try to extract JpegQuality value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  jpegQuality;
 
+		//	Try to initialize Threshold from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  threshold;
+		else {
+			//	Try to initialize Threshold from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  threshold;
+		}
+		//	And try to extract Threshold value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  threshold;
+
 	}
 
 	/*----- PROTECTED REGION ID(VideoCaptureDS::get_device_property_after) ENABLED START -----*/
@@ -295,6 +315,21 @@ void VideoCaptureDS::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_attr_hardware
 }
+//--------------------------------------------------------
+/**
+ *	Method      : VideoCaptureDS::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "VideoCaptureDS::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(VideoCaptureDS::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::write_attr_hardware
+}
 
 //--------------------------------------------------------
 /**
@@ -313,6 +348,63 @@ void VideoCaptureDS::read_Jpeg(Tango::Attribute &attr)
 	attr.set_value(&jpeg);
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Jpeg
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute ContourInfo related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevEncoded
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::read_ContourInfo(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::read_ContourInfo(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(VideoCaptureDS::read_ContourInfo) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_ContourInfo_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_ContourInfo
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute Threshold related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevUShort
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::read_Threshold(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::read_Threshold(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(VideoCaptureDS::read_Threshold) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_Threshold_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Threshold
+}
+//--------------------------------------------------------
+/**
+ *	Write attribute Threshold related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevUShort
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::write_Threshold(Tango::WAttribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::write_Threshold(Tango::WAttribute &attr) entering... " << endl;
+	//	Retrieve write value
+	Tango::DevUShort	w_val;
+	attr.get_write_value(w_val);
+	/*----- PROTECTED REGION ID(VideoCaptureDS::write_Threshold) ENABLED START -----*/
+	
+	*attr_Threshold_read = w_val;
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::write_Threshold
 }
 //--------------------------------------------------------
 /**
@@ -353,7 +445,7 @@ void VideoCaptureDS::add_dynamic_attributes()
 //--------------------------------------------------------
 /**
  *	Command Capture related method
- *	Description: 
+ *	Description: Captures image from webcam
  *
  */
 //--------------------------------------------------------
@@ -384,11 +476,13 @@ void VideoCaptureDS::capture()
 		break;
 	}
 
+	std::vector<vc::ContourInfo> contours;
+
 	std::atomic_bool status = ATOMIC_VAR_INIT(false);
 
 	DEBUG_STREAM << "VideoCaptureDS: Passing capture query to thread" << std::endl;
 
-	camThread->capture(&image_to_show, &jpeg, newMode, std::max(0, std::min(100, (int)jpegQuality)), &status);
+	camThread->capture(&image_to_show, &jpeg, &contours, newMode, std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, &status);
 
 	while (!status)
 	{
@@ -401,21 +495,21 @@ void VideoCaptureDS::capture()
 
 	if (size <= 3840 * 720)
 	{
-		DEBUG_STREAM << "VideoCaptureDS: Copying image to device attribute" << std::endl;
-
 		std::memcpy(attr_Frame_read, image_to_show.data, size);
 		push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
 	}
 
-	DEBUG_STREAM << "VideoCaptureDS: Copying jpeg to device attribute" << std::endl;
-
 	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
 	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.get_data(), jpeg.get_size());
 
-	DEBUG_STREAM << "VideoCaptureDS: Pushing jpeg change event" << std::endl;
+	//push_change_event("Jpeg", attr_Jpeg_read);
 
-	push_change_event("Jpeg", attr_Jpeg_read);
+	int contours_size = contours.size() * sizeof(vc::ContourInfo);
+	attr_ContourInfo_read->encoded_data.length(contours_size);
+	std::memcpy(attr_ContourInfo_read->encoded_data.NP_data(), contours.data(), contours_size);
 
+	//push_change_event("ContourInfo", attr_ContourInfo_read);
+		
 	DEBUG_STREAM << "VideoCaptureDS: End of capture command" << std::endl;
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture
@@ -423,7 +517,7 @@ void VideoCaptureDS::capture()
 //--------------------------------------------------------
 /**
  *	Command Reconnect related method
- *	Description: 
+ *	Description: Reconnect to webcam
  *
  */
 //--------------------------------------------------------
@@ -555,6 +649,23 @@ void VideoCaptureDS::update_cv_cam()
 
 	set_state(Tango::ON);
 }
+// //--------------------------------------------------------
+// /**
+//  *	Read attribute Contours related method
+//  *	Description: 
+//  *
+//  *	Data type:	Tango::DevEncoded
+//  *	Attr type:	Scalar
+//  */
+// //--------------------------------------------------------
+// void VideoCaptureDS::read_Contours(Tango::Attribute &attr)
+// {
+// 	DEBUG_STREAM << "VideoCaptureDS::read_Contours(Tango::Attribute &attr) entering... " << endl;
+// 	//	Set the attribute value
+// 	attr.set_value(attr_Contours_read, 100);
+// 	
+// }
+
 
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::namespace_ending
 } //	namespace
