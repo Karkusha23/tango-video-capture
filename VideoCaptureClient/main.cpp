@@ -7,11 +7,13 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <vc/contour_info.h>
+
 #include "VideoCaptureClient.h"
 
 Tango::DeviceProxy* device = nullptr;
 
-vcc::CameraMode cam_mode;
+vc::CameraMode cam_mode;
 
 unsigned char* image_byte = nullptr;
 
@@ -28,14 +30,15 @@ int main(int argc, char* argv[])
 {
 	try
 	{
+
 		device = new Tango::DeviceProxy(argc < 2 ? "CVCam/test/0" : argv[1]);
-		int update_time = argc < 3 ? 50 : std::stoi(argv[2]);
+		int update_time = argc < 3 ? 300 : std::stoi(argv[2]);
 
-		vcc::print_device_info(std::cout, device);
+		vc::print_device_info(std::cout, device);
 		
-		cam_mode = vcc::get_device_camera_mode(device);
+		cam_mode = vc::get_device_camera_mode(device);
 
-		if (cam_mode == vcc::CameraMode::None)
+		if (cam_mode == vc::CameraMode::None)
 		{
 			throw std::exception("Invalid camera mode");
 		}
@@ -90,25 +93,38 @@ void event_function_Jpeg(Tango::EventData* event_data)
 
 	devAttr = device->read_attribute("Jpeg");
 
+	Tango::DeviceAttribute contourAttr = device->read_attribute("ContourInfo");
+
+	vc::ContourInfo* contours = reinterpret_cast<vc::ContourInfo*>(contourAttr.EncodedSeq[0].encoded_data.NP_data());
+	int contour_count = contourAttr.EncodedSeq[0].encoded_data.length() / sizeof(vc::ContourInfo);
+
 	switch (cam_mode)
 	{
-	case vcc::CameraMode::RGB:
+	case vc::CameraMode::RGB:
 		enAttr.decode_rgb32(&devAttr, &width, &height, &image_byte);
 		image_mat = cv::Mat(height, width, CV_8UC4, image_byte);
 		cv::cvtColor(image_mat, image_converted, cv::COLOR_RGBA2BGR);
 		break;
-	case vcc::CameraMode::BGR:
+	case vc::CameraMode::BGR:
 		enAttr.decode_rgb32(&devAttr, &width, &height, &image_byte);
 		image_mat = cv::Mat(height, width, CV_8UC4, image_byte);
 		cv::cvtColor(image_mat, image_converted, cv::COLOR_BGRA2BGR);
 		break;
-	case vcc::CameraMode::Grayscale:
+	case vc::CameraMode::Grayscale:
 		enAttr.decode_gray8(&devAttr, &width, &height, &image_byte);
 		image_mat = cv::Mat(height, width, CV_8UC1, image_byte);
 		cv::cvtColor(image_mat, image_converted, cv::COLOR_GRAY2BGR);
 		break;
 	default:
 		break;
+	}
+
+	for (int i = 0; i < contour_count; ++i)
+	{
+		std::string text = "Area:" + std::to_string(contours[i].area) + "; Perimeter: " + std::to_string(contours[i].perimeter);
+
+		cv::rectangle(image_converted, contours[i].boundRect.tl(), contours[i].boundRect.br(), cv::Scalar(0, 255, 0), 5);
+		cv::putText(image_converted, text, { contours[i].boundRect.x, contours[i].boundRect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.75, cv::Scalar(0, 255, 0));
 	}
 
 	cv::imshow("Image", image_converted);

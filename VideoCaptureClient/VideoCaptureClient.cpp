@@ -1,6 +1,6 @@
 #include "VideoCaptureClient.h"
 
-void vcc::print_device_info(std::ostream& out, Tango::DeviceProxy* device)
+void vc::print_device_info(std::ostream& out, Tango::DeviceProxy* device)
 {
 	out << "Ping time: " << device->ping() << std::endl;
 	std::cout << "Device name: " << device->name() << std::endl;
@@ -23,7 +23,7 @@ void vcc::print_device_info(std::ostream& out, Tango::DeviceProxy* device)
 	}
 }
 
-vcc::CameraMode vcc::get_device_camera_mode(Tango::DeviceProxy* device)
+vc::CameraMode vc::get_device_camera_mode(Tango::DeviceProxy* device)
 {
 	Tango::DbData mode_db;
 	device->get_property(std::string("Mode"), mode_db);
@@ -46,7 +46,7 @@ vcc::CameraMode vcc::get_device_camera_mode(Tango::DeviceProxy* device)
 	return CameraMode::None;
 }
 
-int vcc::get_device_int_property(Tango::DeviceProxy* device, const std::string& name)
+int vc::get_device_int_property(Tango::DeviceProxy* device, const std::string& name)
 {
 	Tango::DbData val_db;
 	device->get_property(std::string(name), val_db);
@@ -56,7 +56,7 @@ int vcc::get_device_int_property(Tango::DeviceProxy* device, const std::string& 
 	return std::stoi(mode);
 }
 
-void vcc::JpegCallBack::push_event(Tango::EventData* event_data)
+void vc::JpegCallBack::push_event(Tango::EventData* event_data)
 {
 	fun_(event_data);
 }

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <tango.h>
 
-namespace vcc
+namespace vc
 {
 	typedef void (*pFun)(Tango::EventData*);
 
