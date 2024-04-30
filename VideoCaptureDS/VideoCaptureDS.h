@@ -44,7 +44,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <vc/contour_info.h>
+#include <vc/camproc.h>
 
 #include "CamCaptureThread.h"
 
@@ -78,7 +78,7 @@ private:
 	// Parameters for jpeg incoding with opencv
 	//std::vector<int> jpeg_incode_params;
 
-	enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale } cam_mode;
+	vc::CameraMode cam_mode;
 
 	cv::Mat image_to_show;
 	Tango::EncodedAttribute jpeg;

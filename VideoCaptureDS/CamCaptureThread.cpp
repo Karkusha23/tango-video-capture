@@ -73,17 +73,17 @@ namespace VideoCaptureDS_ns
 
 			switch (query.mode)
 			{
-			case CameraMode::RGB:
+			case vc::CameraMode::RGB:
 				cv::cvtColor(*query.image, image_converted, cv::COLOR_BGR2RGB);
 				cv::cvtColor(*query.image, image_to_jpeg, cv::COLOR_BGR2RGBA);
 				query.jpeg->encode_jpeg_rgb32(image_to_jpeg.data, width_, height_, query.jpegQuality);
 				*query.image = std::move(image_converted);
 				break;
-			case CameraMode::BGR:
+			case vc::CameraMode::BGR:
 				cv::cvtColor(*query.image, image_to_jpeg, cv::COLOR_BGR2BGRA);
 				query.jpeg->encode_jpeg_rgb32(image_to_jpeg.data, width_, height_, query.jpegQuality);
 				break;
-			case CameraMode::Grayscale:
+			case vc::CameraMode::Grayscale:
 				query.jpeg->encode_jpeg_gray8(image_gray.data, width_, height_, query.jpegQuality);
 				*query.image = std::move(image_gray);
 				break;
@@ -110,7 +110,7 @@ namespace VideoCaptureDS_ns
 		DEBUG_STREAM << "CamCaptureThread: Thread is stopping" << std::endl;
 	}
 
-	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status)
+	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status)
 	{
 		omni_mutex_lock lock(queue_mutex_);
 

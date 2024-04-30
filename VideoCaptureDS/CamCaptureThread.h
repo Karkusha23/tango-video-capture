@@ -1,5 +1,5 @@
-#ifndef MyThreadIncluded
-#define MyThreadIncluded
+#ifndef _MyThreadIncluded
+#define _MyThreadIncluded
 
 #include <string>
 #include <atomic>
@@ -12,12 +12,10 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <vc/contour_info.h>
+#include <vc/camproc.h>
 
 namespace VideoCaptureDS_ns
 {
-	enum class CameraMode : unsigned char { RGB, BGR, Grayscale };
-
 	class CamCaptureThread : public omni_thread, public Tango::LogAdapter
 	{
 	public:
@@ -27,7 +25,7 @@ namespace VideoCaptureDS_ns
 
 		void* run_undetached(void*);
 		void stop();
-		void capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status);
+		void capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status);
 
 		bool is_failed() const;
 
@@ -55,7 +53,7 @@ namespace VideoCaptureDS_ns
 			cv::Mat* image;
 			Tango::EncodedAttribute* jpeg;
 			std::vector<vc::ContourInfo>* contours;
-			CameraMode mode;
+			vc::CameraMode mode;
 			double jpegQuality;
 			int threshold;
 			std::atomic_bool* status;

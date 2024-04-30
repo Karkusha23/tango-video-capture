@@ -421,7 +421,7 @@ void VideoCaptureDS::read_Frame(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(VideoCaptureDS::read_Frame) ENABLED START -----*/
 	//	Set the attribute value
 
-	attr.set_value(attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
+	attr.set_value(attr_Frame_read, cam_mode == vc::CameraMode::Grayscale ? width : width * 3, height);
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Frame
 }
@@ -454,26 +454,9 @@ void VideoCaptureDS::capture()
 	DEBUG_STREAM << "VideoCaptureDS::Capture()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::capture) ENABLED START -----*/
 
-	if (cam_mode == CameraMode::None)
+	if (cam_mode == vc::CameraMode::None)
 	{
 		return;
-	}
-
-	VideoCaptureDS_ns::CameraMode newMode;
-
-	switch (cam_mode)
-	{
-	case CameraMode::RGB:
-		newMode = VideoCaptureDS_ns::CameraMode::RGB;
-		break;
-	case CameraMode::BGR:
-		newMode = VideoCaptureDS_ns::CameraMode::BGR;
-		break;
-	case CameraMode::Grayscale:
-		newMode = VideoCaptureDS_ns::CameraMode::Grayscale;
-		break;
-	default:
-		break;
 	}
 
 	std::vector<vc::ContourInfo> contours;
@@ -482,7 +465,7 @@ void VideoCaptureDS::capture()
 
 	DEBUG_STREAM << "VideoCaptureDS: Passing capture query to thread" << std::endl;
 
-	camThread->capture(&image_to_show, &jpeg, &contours, newMode, std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, &status);
+	camThread->capture(&image_to_show, &jpeg, &contours, cam_mode, std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, &status);
 
 	while (!status)
 	{
@@ -496,7 +479,7 @@ void VideoCaptureDS::capture()
 	if (size <= 3840 * 720)
 	{
 		std::memcpy(attr_Frame_read, image_to_show.data, size);
-		push_change_event("Frame", attr_Frame_read, cam_mode == CameraMode::Grayscale ? width : width * 3, height);
+		push_change_event("Frame", attr_Frame_read, cam_mode == vc::CameraMode::Grayscale ? width : width * 3, height);
 	}
 
 	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
@@ -616,19 +599,19 @@ void VideoCaptureDS::update_cv_cam()
 
 	if (mode == "RGB" || mode == "rgb")
 	{
-		cam_mode = CameraMode::RGB;
+		cam_mode = vc::CameraMode::RGB;
 	}
 	else if (mode == "BGR" || mode == "bgr")
 	{
-		cam_mode = CameraMode::BGR;
+		cam_mode = vc::CameraMode::BGR;
 	}
 	else if (mode == "Grayscale" || mode == "grayscale")
 	{
-		cam_mode = CameraMode::Grayscale;
+		cam_mode = vc::CameraMode::Grayscale;
 	}
 	else
 	{
-		cam_mode = CameraMode::None;
+		cam_mode = vc::CameraMode::None;
 		set_state(Tango::FAULT);
 	}
 
