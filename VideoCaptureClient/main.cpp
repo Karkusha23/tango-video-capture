@@ -7,7 +7,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <vc/contour_info.h>
+#include <vc/camproc.h>
 
 #include "VideoCaptureClient.h"
 
@@ -30,7 +30,6 @@ int main(int argc, char* argv[])
 {
 	try
 	{
-
 		device = new Tango::DeviceProxy(argc < 2 ? "CVCam/test/0" : argv[1]);
 		int update_time = argc < 3 ? 300 : std::stoi(argv[2]);
 
