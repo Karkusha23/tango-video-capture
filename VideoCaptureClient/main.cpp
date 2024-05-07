@@ -23,6 +23,9 @@ Tango::EncodedAttribute enAttr;
 cv::Mat image_mat;
 cv::Mat image_converted;
 
+int threshold = 0;
+int threshold_prev = threshold_prev;
+
 void event_function_Jpeg(Tango::EventData* event_data);
 void event_function_Frame(Tango::EventData* event_data);
 
@@ -47,6 +50,13 @@ int main(int argc, char* argv[])
 
 		//vcc::JpegCallBack callBack(event_function_Frame);
 		//int event_id = device->subscribe_event(std::string("Frame"), Tango::CHANGE_EVENT, &callBack, std::vector<std::string>());
+
+		//threshold = threshold_prev = vc::get_device_int_property(device, "Threshold");
+
+		threshold = threshold_prev = device->read_attribute("Threshold").UShortSeq[0];
+
+		cv::namedWindow("Threshold", (640, 200));
+		cv::createTrackbar("Threshold", "Threshold", &threshold, 100);
 
 		do
 		{
@@ -120,13 +130,20 @@ void event_function_Jpeg(Tango::EventData* event_data)
 
 	for (int i = 0; i < contour_count; ++i)
 	{
-		std::string text = "Area:" + std::to_string(contours[i].area) + "; Perimeter: " + std::to_string(contours[i].perimeter);
+		std::string text = "Area:" + std::to_string(contours[i].area) /* + "; Perimeter: " + std::to_string(contours[i].perimeter)*/;
 
 		cv::rectangle(image_converted, contours[i].boundRect.tl(), contours[i].boundRect.br(), cv::Scalar(0, 255, 0), 5);
-		cv::putText(image_converted, text, { contours[i].boundRect.x, contours[i].boundRect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.75, cv::Scalar(0, 255, 0));
+		cv::putText(image_converted, text, { contours[i].boundRect.x, contours[i].boundRect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(0, 255, 0));
 	}
 
 	cv::imshow("Image", image_converted);
+
+	if (threshold != threshold_prev)
+	{
+		threshold_prev = threshold;
+		Tango::DeviceAttribute threshold_write(std::string("Threshold"), Tango::DevUShort(std::max(0, std::min(100, threshold))));
+		device->write_attribute(threshold_write);
+	}
 }
 
 void event_function_Frame(Tango::EventData* event_data)

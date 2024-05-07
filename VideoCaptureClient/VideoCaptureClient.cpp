@@ -54,6 +54,8 @@ namespace vc
 		device->get_property(std::string(name), val_db);
 		std::string mode;
 		val_db[0] >> mode;
+		
+		std::cout << mode << std::endl;
 
 		return std::stoi(mode);
 	}
