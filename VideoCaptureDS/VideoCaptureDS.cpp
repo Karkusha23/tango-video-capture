@@ -485,13 +485,13 @@ void VideoCaptureDS::capture()
 	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
 	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.get_data(), jpeg.get_size());
 
-	//push_change_event("Jpeg", attr_Jpeg_read);
+	push_change_event("Jpeg", attr_Jpeg_read);
 
 	int contours_size = contours.size() * sizeof(vc::ContourInfo);
 	attr_ContourInfo_read->encoded_data.length(contours_size);
 	std::memcpy(attr_ContourInfo_read->encoded_data.NP_data(), contours.data(), contours_size);
 
-	//push_change_event("ContourInfo", attr_ContourInfo_read);
+	push_change_event("ContourInfo", attr_ContourInfo_read);
 		
 	DEBUG_STREAM << "VideoCaptureDS: End of capture command" << std::endl;
 
@@ -509,6 +509,7 @@ void VideoCaptureDS::reconnect()
 	DEBUG_STREAM << "VideoCaptureDS::Reconnect()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::reconnect) ENABLED START -----*/
 
+	get_device_property();
 	update_cv_cam();
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::reconnect

@@ -6,6 +6,7 @@ namespace VideoCaptureDS_ns
 		omni_thread(), Tango::LogAdapter((TANGO_BASE_CLASS*)dev), device_(dev),
 		local_exit_(ATOMIC_VAR_INIT(false)), is_failed_(ATOMIC_VAR_INIT(false)),
 		cam_(nullptr), image_no_image(nullptr)
+		//contours_(new std::vector<std::vector<cv::Point>>()), hierarchy_(new std::vector<cv::Vec4i>())
 	{
 		connect(source, width, height);
 		start_undetached();
@@ -14,6 +15,9 @@ namespace VideoCaptureDS_ns
 	CamCaptureThread::~CamCaptureThread()
 	{
 		DEBUG_STREAM << "CamCaptureThread::~CamCaptureThread() entering" << std::endl;
+
+		//delete contours_;
+		//delete hierarchy_;
 
 		delete cam_;
 		delete image_no_image;
@@ -142,7 +146,6 @@ namespace VideoCaptureDS_ns
 		{
 			is_failed_ = true;
 		}
-
 		else
 		{
 			cam_->set(cv::CAP_PROP_FRAME_HEIGHT, height);
@@ -167,8 +170,8 @@ namespace VideoCaptureDS_ns
 		cv::Mat image_dilation;
 
 		cv::GaussianBlur(image_gray, image_blur, cv::Size(5, 5), 3, 0);
-		cv::Canny(image_blur, image_canny, threshold, threshold * 2.5);
-		cv::dilate(image_canny, image_dilation, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
+		cv::Canny(image_blur, image_canny, threshold, threshold * 3);
+		cv::dilate(image_canny, image_dilation, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)));
 
 		cv::findContours(image_dilation, contours_, hierarchy_, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
