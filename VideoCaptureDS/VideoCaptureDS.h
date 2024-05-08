@@ -69,15 +69,6 @@ class VideoCaptureDS : public TANGO_BASE_CLASS
 
 private:
 
-	// Camera
-	//cv::VideoCapture* cv_cam;
-
-	// Image that is shown if cannot get image from camera
-	//cv::Mat* image_no_image;
-
-	// Parameters for jpeg incoding with opencv
-	//std::vector<int> jpeg_incode_params;
-
 	vc::CameraMode cam_mode;
 
 	cv::Mat image_to_show;

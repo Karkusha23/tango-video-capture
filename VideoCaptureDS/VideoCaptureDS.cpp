@@ -492,7 +492,7 @@ void VideoCaptureDS::capture()
 	std::memcpy(attr_ContourInfo_read->encoded_data.NP_data(), contours.data(), contours_size);
 
 	push_change_event("ContourInfo", attr_ContourInfo_read);
-		
+
 	DEBUG_STREAM << "VideoCaptureDS: End of capture command" << std::endl;
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::capture

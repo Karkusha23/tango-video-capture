@@ -16,6 +16,7 @@
 
 namespace VideoCaptureDS_ns
 {
+	// Thread for capturing and processing images from webcam
 	class CamCaptureThread : public omni_thread, public Tango::LogAdapter
 	{
 	public:
