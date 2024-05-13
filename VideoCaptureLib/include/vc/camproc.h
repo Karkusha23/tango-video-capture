@@ -7,11 +7,23 @@ namespace vc
 {
 	enum class CameraMode : unsigned char { None, RGB, BGR, Grayscale };
 
+	struct Ruler
+	{
+		cv::Point start;
+		cv::Point end;
+		double length;
+	};
+
 	struct ContourInfo
 	{
-		cv::Rect boundRect;
-		int area;
-		double perimeter;
+		cv::Rect bound_rect;
+		cv::Point center_mass;
+
+		int area_rel;
+		double area_abs;
+
+		double diameter_rel;
+		double diameter_abs;
 	};
 }
 
