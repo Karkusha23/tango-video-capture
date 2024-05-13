@@ -106,6 +106,26 @@ bool VideoCaptureDS::is_Threshold_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 //--------------------------------------------------------
 /**
+ *	Method      : VideoCaptureDS::is_Ruler_allowed()
+ *	Description : Execution allowed for Ruler attribute
+ */
+//--------------------------------------------------------
+bool VideoCaptureDS::is_Ruler_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+	//	Not any excluded states for Ruler attribute in Write access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::RulerStateAllowed_WRITE) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::RulerStateAllowed_WRITE
+
+	//	Not any excluded states for Ruler attribute in read access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::RulerStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::RulerStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : VideoCaptureDS::is_Frame_allowed()
  *	Description : Execution allowed for Frame attribute
  */

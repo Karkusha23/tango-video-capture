@@ -100,6 +100,21 @@ public:
 		{return (static_cast<VideoCaptureDS *>(dev))->is_Threshold_allowed(ty);}
 };
 
+//	Attribute Ruler class definition
+class RulerAttrib: public Tango::Attr
+{
+public:
+	RulerAttrib():Attr("Ruler",
+			Tango::DEV_ENCODED, Tango::READ_WRITE) {};
+	~RulerAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->read_Ruler(att);}
+	virtual void write(Tango::DeviceImpl *dev,Tango::WAttribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->write_Ruler(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<VideoCaptureDS *>(dev))->is_Ruler_allowed(ty);}
+};
+
 //	Attribute Frame class definition
 class FrameAttrib: public Tango::ImageAttr
 {

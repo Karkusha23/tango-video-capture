@@ -68,6 +68,7 @@ static const char *RcsId = "$Id:  $";
 //  Jpeg         |  Tango::DevEncoded	Scalar
 //  ContourInfo  |  Tango::DevEncoded	Scalar
 //  Threshold    |  Tango::DevUShort	Scalar
+//  Ruler        |  Tango::DevEncoded	Scalar
 //  Frame        |  Tango::DevUChar	Image  ( max = 3840 x 720)
 //================================================================
 
@@ -133,6 +134,7 @@ void VideoCaptureDS::delete_device()
 	delete[] attr_Jpeg_read;
 	delete[] attr_ContourInfo_read;
 	delete[] attr_Threshold_read;
+	delete[] attr_Ruler_read;
 	delete[] attr_Frame_read;
 }
 
@@ -158,6 +160,7 @@ void VideoCaptureDS::init_device()
 	attr_Jpeg_read = new Tango::DevEncoded[1];
 	attr_ContourInfo_read = new Tango::DevEncoded[1];
 	attr_Threshold_read = new Tango::DevUShort[1];
+	attr_Ruler_read = new Tango::DevEncoded[1];
 	attr_Frame_read = new Tango::DevUChar[3840*720];
 	/*----- PROTECTED REGION ID(VideoCaptureDS::init_device) ENABLED START -----*/
 
@@ -168,6 +171,11 @@ void VideoCaptureDS::init_device()
 	update_cv_cam();
 
 	*attr_Threshold_read = threshold;
+
+	attr_Ruler_read->encoded_data.length(sizeof(vc::Ruler));
+	ruler = reinterpret_cast<vc::Ruler*>(attr_Ruler_read->encoded_data.NP_data());
+	ruler->start = ruler->end = cv::Point(0, 0);
+	ruler->length = 0.0;
 
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::init_device
 }
@@ -408,6 +416,45 @@ void VideoCaptureDS::write_Threshold(Tango::WAttribute &attr)
 }
 //--------------------------------------------------------
 /**
+ *	Read attribute Ruler related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevEncoded
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::read_Ruler(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::read_Ruler(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(VideoCaptureDS::read_Ruler) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_Ruler_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Ruler
+}
+//--------------------------------------------------------
+/**
+ *	Write attribute Ruler related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevEncoded
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::write_Ruler(Tango::WAttribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::write_Ruler(Tango::WAttribute &attr) entering... " << endl;
+	//	Retrieve write value
+	Tango::DevEncoded	w_val;
+	attr.get_write_value(w_val);
+	/*----- PROTECTED REGION ID(VideoCaptureDS::write_Ruler) ENABLED START -----*/
+	
+	std::memcpy(attr_Ruler_read->encoded_data.NP_data(), w_val.encoded_data.NP_data(), sizeof(vc::Ruler));
+
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::write_Ruler
+}
+//--------------------------------------------------------
+/**
  *	Read attribute Frame related method
  *	Description: 
  *
@@ -465,7 +512,7 @@ void VideoCaptureDS::capture()
 
 	DEBUG_STREAM << "VideoCaptureDS: Passing capture query to thread" << std::endl;
 
-	camThread->capture(&image_to_show, &jpeg, &contours, cam_mode, std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, &status);
+	camThread->capture(&image_to_show, &jpeg, &contours, ruler, cam_mode, std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, &status);
 
 	while (!status)
 	{
@@ -647,6 +694,42 @@ void VideoCaptureDS::update_cv_cam()
 // 	DEBUG_STREAM << "VideoCaptureDS::read_Contours(Tango::Attribute &attr) entering... " << endl;
 // 	//	Set the attribute value
 // 	attr.set_value(attr_Contours_read, 100);
+// 	
+// }
+
+// //--------------------------------------------------------
+// /**
+//  *	Read attribute Ruler related method
+//  *	Description: 
+//  *
+//  *	Data type:	Tango::DevEncoded
+//  *	Attr type:	Scalar
+//  */
+// //--------------------------------------------------------
+// void VideoCaptureDS::read_Ruler(Tango::Attribute &attr)
+// {
+// 	DEBUG_STREAM << "VideoCaptureDS::read_Ruler(Tango::Attribute &attr) entering... " << endl;
+// 	//	Set the attribute value
+// 	attr.set_value(attr_Ruler_read);
+// 	
+// }
+
+// //--------------------------------------------------------
+// /**
+//  *	Write attribute Ruler related method
+//  *	Description: 
+//  *
+//  *	Data type:	Tango::DevEncoded
+//  *	Attr type:	Scalar
+//  */
+// //--------------------------------------------------------
+// void VideoCaptureDS::write_Ruler(Tango::WAttribute &attr)
+// {
+// 	DEBUG_STREAM << "VideoCaptureDS::write_Ruler(Tango::WAttribute &attr) entering... " << endl;
+// 	//	Retrieve write value
+// 	Tango::DevEncoded	w_val;
+// 	attr.get_write_value(w_val);
+// 	
 // 	
 // }
 

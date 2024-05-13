@@ -73,7 +73,7 @@ namespace VideoCaptureDS_ns
 
 			cv::cvtColor(*query.image, image_gray, cv::COLOR_BGR2GRAY);
 
-			get_contours_(image_gray, query.contours, query.threshold);
+			get_contours_(image_gray, query.contours, query.ruler, query.threshold);
 
 			switch (query.mode)
 			{
@@ -114,13 +114,14 @@ namespace VideoCaptureDS_ns
 		DEBUG_STREAM << "CamCaptureThread: Thread is stopping" << std::endl;
 	}
 
-	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status)
+	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, const vc::Ruler* ruler,
+								   vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status)
 	{
 		omni_mutex_lock lock(queue_mutex_);
 
 		DEBUG_STREAM << "CamCaptureThread: Adding capture query to queue" << std::endl;
 
-		queue_.push({ image, jpeg, contours, mode, jpegQuality, threshold, status });
+		queue_.push({ image, jpeg, contours, ruler, mode, jpegQuality, threshold, status });
 	}
 
 	bool CamCaptureThread::is_failed() const
@@ -161,7 +162,7 @@ namespace VideoCaptureDS_ns
 		cv::putText(*image_no_image, "No image", cv::Point(width / 2 - 50, height / 2), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(255, 255, 255));
 	}
 
-	void CamCaptureThread::get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, int threshold)
+	void CamCaptureThread::get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, const vc::Ruler* ruler, int threshold)
 	{
 		DEBUG_STREAM << "CamCaptureThread: Getting contours" << std::endl;
 
@@ -177,21 +178,62 @@ namespace VideoCaptureDS_ns
 
 		for (const std::vector<cv::Point>& contour : contours_)
 		{
-			vc::ContourInfo con_info;
+			int area_rel = cv::contourArea(contour);
 
-			con_info.area = cv::contourArea(contour);
-
-			if (con_info.area < 1000)
+			if (area_rel < 1000)
 			{
 				continue;
 			}
 
-			con_info.boundRect = cv::boundingRect(contour);
-			con_info.perimeter = cv::arcLength(contour, true);
+			float diameter_rel;
+			cv::Point2f center;
+			cv::minEnclosingCircle(contour, center, diameter_rel);
+
+			vc::ContourInfo con_info;
+
+			con_info.bound_rect = cv::boundingRect(contour);
+			con_info.center_mass = get_center_of_mass_(contour);
+
+			con_info.area_rel = area_rel;
+			con_info.diameter_rel = diameter_rel;
+
+			if (is_ruler_valid_(ruler))
+			{
+				double multiplier = ruler->length / std::sqrt((ruler->start.x - ruler->end.x) * (ruler->start.x - ruler->end.x) + (ruler->start.y - ruler->end.y) * (ruler->start.y - ruler->end.y));
+
+				con_info.area_abs = area_rel * multiplier * multiplier;
+				con_info.diameter_abs = (double)diameter_rel * multiplier;
+			}
+			else
+			{
+				con_info.area_abs = con_info.diameter_abs = 0.0;
+			}
 
 			contourInfo->push_back(con_info);
 		}
 
 		DEBUG_STREAM << "CamCaptureThread: Contours found: " << contours_.size() << "; valid ones: " << contourInfo->size() << std::endl;
+	}
+
+	cv::Point CamCaptureThread::get_center_of_mass_(const std::vector<cv::Point>& contour)
+	{
+		size_t x = 0;
+		size_t y = 0;
+
+		for (const cv::Point& point : contour)
+		{
+			x += (size_t)point.x;
+			y += (size_t)point.y;
+		}
+
+		x /= contour.size();
+		y /= contour.size();
+
+		return cv::Point((int)x, (int)y);
+	}
+
+	bool CamCaptureThread::is_ruler_valid_(const vc::Ruler* ruler)
+	{
+		return ruler != nullptr && ruler->start != ruler->end && ruler->length > 0.0;
 	}
 }

@@ -26,7 +26,8 @@ namespace VideoCaptureDS_ns
 
 		void* run_undetached(void*);
 		void stop();
-		void capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status);
+		void capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, const vc::Ruler* ruler,
+					 vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status);
 
 		bool is_failed() const;
 
@@ -34,7 +35,11 @@ namespace VideoCaptureDS_ns
 
 	private:
 
-		void get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, int threshold);
+		void get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, const vc::Ruler* ruler, int threshold);
+
+		cv::Point get_center_of_mass_(const std::vector<cv::Point>& contour);
+
+		static bool is_ruler_valid_(const vc::Ruler* ruler);
 
 		class VideoCaptureDS* device_;
 
@@ -54,6 +59,7 @@ namespace VideoCaptureDS_ns
 			cv::Mat* image;
 			Tango::EncodedAttribute* jpeg;
 			std::vector<vc::ContourInfo>* contours;
+			const vc::Ruler* ruler;
 			vc::CameraMode mode;
 			double jpegQuality;
 			int threshold;

@@ -624,6 +624,30 @@ void VideoCaptureDSClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	att_list.push_back(threshold);
 
+	//	Attribute : Ruler
+	RulerAttrib	*ruler = new RulerAttrib();
+	Tango::UserDefaultAttrProp	ruler_prop;
+	//	description	not set for Ruler
+	//	label	not set for Ruler
+	//	unit	not set for Ruler
+	//	standard_unit	not set for Ruler
+	//	display_unit	not set for Ruler
+	//	format	not set for Ruler
+	//	max_value	not set for Ruler
+	//	min_value	not set for Ruler
+	//	max_alarm	not set for Ruler
+	//	min_alarm	not set for Ruler
+	//	max_warning	not set for Ruler
+	//	min_warning	not set for Ruler
+	//	delta_t	not set for Ruler
+	//	delta_val	not set for Ruler
+	
+	ruler->set_default_properties(ruler_prop);
+	//	Not Polled
+	ruler->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(ruler);
+
 	//	Attribute : Frame
 	FrameAttrib	*frame = new FrameAttrib();
 	Tango::UserDefaultAttrProp	frame_prop;

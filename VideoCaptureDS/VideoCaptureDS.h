@@ -76,6 +76,8 @@ private:
 
 	class CamCaptureThread* camThread;
 
+	vc::Ruler* ruler;
+
 /*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::Data Members
 
 //	Device property data members
@@ -102,6 +104,7 @@ public:
 	Tango::DevEncoded	*attr_Jpeg_read;
 	Tango::DevEncoded	*attr_ContourInfo_read;
 	Tango::DevUShort	*attr_Threshold_read;
+	Tango::DevEncoded	*attr_Ruler_read;
 	Tango::DevUChar	*attr_Frame_read;
 
 //	Constructors and destructors
@@ -199,6 +202,16 @@ public:
 	virtual void read_Threshold(Tango::Attribute &attr);
 	virtual void write_Threshold(Tango::WAttribute &attr);
 	virtual bool is_Threshold_allowed(Tango::AttReqType type);
+/**
+ *	Attribute Ruler related methods
+ *	Description: 
+ *
+ *	Data type:	Tango::DevEncoded
+ *	Attr type:	Scalar
+ */
+	virtual void read_Ruler(Tango::Attribute &attr);
+	virtual void write_Ruler(Tango::WAttribute &attr);
+	virtual bool is_Ruler_allowed(Tango::AttReqType type);
 /**
  *	Attribute Frame related methods
  *	Description: 
