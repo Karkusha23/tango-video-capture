@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 
 		do
 		{
-			dev.update_threshold_value();
+			dev.update();
 		} while (cv::waitKey(update_time) != 0x1B);
 
 		dev.device().unsubscribe_event(event_id);

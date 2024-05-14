@@ -2,6 +2,22 @@
 
 namespace vc
 {
+	const char* IMAGE_WINDOW_NAME = "Image";
+	const char* IMAGE_PARAMETERS_WINDOW_NAME = "Image parameters";
+
+	cv::Scalar TEXT_COLOR = cv::Scalar(0, 255, 0);
+	cv::Scalar RULER_COLOR = cv::Scalar(255, 0, 0);
+
+	bool operator==(const Ruler& ruler1, const Ruler& ruler2)
+	{
+		return ruler1.start == ruler2.start && ruler1.end == ruler2.end && ruler1.length == ruler2.length;
+	}
+
+	double distance(const cv::Point& point1, const cv::Point& point2)
+	{
+		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
+	}
+
 	VideoCaptureDevice::VideoCaptureDevice(const char* device_name) : device_(device_name)
 	{
 		cam_mode_ = get_device_camera_mode_();
@@ -13,14 +29,31 @@ namespace vc
 
 		threshold_ = threshold_prev_ = device_.read_attribute("Threshold").UShortSeq[0];
 
-		cv::namedWindow("Threshold", (640, 200));
-		cv::createTrackbar("Threshold", "Threshold", &threshold_, 100);
+		ruler_ = ruler_prev_ = *reinterpret_cast<vc::Ruler*>(device_.read_attribute("Ruler").EncodedSeq[0].encoded_data.NP_data());
+		ruler_length_ = (int)ruler_.length;
+
+		int width = get_device_int_property("Width");
+		int height = get_device_int_property("Height");
+
+		mouse_flipflop_ = false;
+
+		cv::namedWindow(IMAGE_WINDOW_NAME);
+		cv::setMouseCallback(IMAGE_WINDOW_NAME, image_mouse_callback, this);
+
+		cv::namedWindow(IMAGE_PARAMETERS_WINDOW_NAME);
+		cv::resizeWindow(IMAGE_PARAMETERS_WINDOW_NAME, 600, 300);
+		cv::createTrackbar("Threshold", IMAGE_PARAMETERS_WINDOW_NAME, &threshold_, 100);
+		cv::createTrackbar("Ruler Start X", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.start.x, width);
+		cv::createTrackbar("Ruler Start Y", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.start.y, height);
+		cv::createTrackbar("Ruler End   X", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.end.x, width);
+		cv::createTrackbar("Ruler End   Y", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.end.y, height);
+		cv::createTrackbar("Ruler length", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_length_, 1000);
 	}
 
 	VideoCaptureDevice::~VideoCaptureDevice()
 	{
-		cv::destroyWindow("Image");
-		cv::destroyWindow("Threshold");
+		cv::destroyWindow(IMAGE_WINDOW_NAME);
+		cv::destroyWindow(IMAGE_PARAMETERS_WINDOW_NAME);
 	}
 
 	Tango::DeviceProxy& VideoCaptureDevice::device()
@@ -72,23 +105,52 @@ namespace vc
 
 		for (int i = 0; i < contour_count; ++i)
 		{
-			std::string text = "Area:" + std::to_string(contours[i].area) /* + "; Perimeter: " + std::to_string(contours[i].perimeter)*/;
+			std::string text;
 
-			cv::rectangle(image, contours[i].boundRect.tl(), contours[i].boundRect.br(), cv::Scalar(0, 255, 0), 5);
-			cv::putText(image, text, { contours[i].boundRect.x, contours[i].boundRect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(0, 255, 0));
+			if (contours[i].area_abs > 0.0)
+			{
+				text += "Area:" + std::to_string(contours[i].area_abs);
+			}
+			else
+			{
+				text += "Area(px):" + std::to_string(contours[i].area_rel);
+			}
+
+			text += "; ";
+
+			if (contours[i].diameter_abs > 0.0)
+			{
+				text += "Diameter:" + std::to_string(contours[i].diameter_abs);
+			}
+			else
+			{
+				text += "Diameter(px):" + std::to_string(contours[i].diameter_rel);
+			}
+
+			cv::rectangle(image, contours[i].bound_rect.tl(), contours[i].bound_rect.br(), TEXT_COLOR, 5);
+			cv::circle(image, contours[i].center_mass, 3, TEXT_COLOR, -1);
+			cv::putText(image, text, { contours[i].bound_rect.x, contours[i].bound_rect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
 		}
 
-		cv::imshow("Image", image);
+		cv::line(image, ruler_.start, ruler_.end, RULER_COLOR, 2);
+
+		cv::imshow(IMAGE_WINDOW_NAME, image);
 	}
 
-	void VideoCaptureDevice::update_threshold_value()
+	void VideoCaptureDevice::update()
 	{
-		if (threshold_ != threshold_prev_)
-		{
-			threshold_prev_ = threshold_;
-			Tango::DeviceAttribute threshold_write(std::string("Threshold"), Tango::DevUShort(std::max(0, std::min(100, threshold_))));
-			device_.write_attribute(threshold_write);
-		}
+		update_threshold_value_();
+		update_ruler_();
+	}
+
+	void VideoCaptureDevice::set_ruler_point_to(const cv::Point& point)
+	{
+		cv::Point& ruler_point = distance(point, ruler_.start) < distance(point, ruler_.end) ? ruler_.start : ruler_.end;
+
+		//cv::Point& ruler_point = mouse_flipflop_ ? ruler_.start : ruler_.end;
+		//mouse_flipflop_ = !mouse_flipflop_;
+
+		ruler_point = point;
 	}
 
 	CameraMode VideoCaptureDevice::get_device_camera_mode_()
@@ -157,5 +219,44 @@ namespace vc
 		delete[] image_byte;
 
 		return image_converted;
+	}
+
+	void VideoCaptureDevice::update_threshold_value_()
+	{
+		if (threshold_ == threshold_prev_)
+		{
+			return;
+		}
+
+		threshold_prev_ = threshold_;
+		Tango::DeviceAttribute threshold_write(std::string("Threshold"), Tango::DevUShort(std::max(0, std::min(100, threshold_))));
+		device_.write_attribute(threshold_write);
+	}
+
+	void VideoCaptureDevice::update_ruler_()
+	{
+		ruler_.length = (double)ruler_length_;
+
+		if (ruler_ == ruler_prev_)
+		{
+			return;
+		}
+
+		ruler_prev_ = ruler_;
+
+		Tango::DevEncoded ruler_encoded;
+		ruler_encoded.encoded_data.length(sizeof(Ruler));
+		std::memcpy(ruler_encoded.encoded_data.NP_data(), &ruler_, sizeof(Ruler));
+
+		Tango::DeviceAttribute ruler_write(std::string("Ruler"), ruler_encoded);
+		device_.write_attribute(ruler_write);
+	}
+
+	void image_mouse_callback(int event, int x, int y, int flags, void* param)
+	{
+		if (event & cv::EVENT_LBUTTONDOWN)
+		{
+			reinterpret_cast<VideoCaptureDevice*>(param)->set_ruler_point_to(cv::Point(x, y));
+		}
 	}
 }
