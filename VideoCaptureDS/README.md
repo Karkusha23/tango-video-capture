@@ -51,7 +51,7 @@ _Чтобы изменения свойств вступили в силу, тр
 3. Скопировать с заменой файлы .h и .cpp из этой папки в сгенерированную папку проекта
 4. Открыть проект в Visual Studio
 5. Включить в проекты Class_dll и Class_lib файлы `CamCaptureThread.h` и `CamCaptureThread.cpp`
-6. Для кажого проекта в солюшне в его свойствах добавить в каталоги включения `%opencv_root%\build\include` и `%VideoCaptureLib%\include`, и в каталоги библиотек добавить `%opencv_root\build\x64\vc12\lib%`, где `%opencv_root%` - путь, по которому установлен OpenCV
+6. Для кажого проекта в солюшне в его свойствах добавить в каталоги включения `%opencv_root%\build\include` и `%VideoCaptureLib%\include`, и в каталоги библиотек добавить `%opencv_root%\build\x64\vc12\lib`, где `%opencv_root%` - путь, по которому установлен OpenCV
 
 ![image](https://github.com/Karkusha23/my-opencv/assets/16138259/a2c091e2-7765-4bb3-b597-4f6ff75a8eb6)
 
