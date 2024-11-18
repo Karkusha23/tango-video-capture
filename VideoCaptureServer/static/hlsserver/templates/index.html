@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<head>
+<title>123</title>
+</head>
+<body>
+<p>Hello World from Async!</p>
+<video id="video" width="640" height="480" autoplay controls
+class="videoCentered"></video>
+</body>
+<script>
+if(Hls.isSupported()) {
+console.log('123');
+var video = document.getElementById('video');
+var hls = new Hls();
+hls.loadSource('/media_no_cache/playlists/playlist.m3u8');
+hls.attachMedia(video);
+hls.on(Hls.Events.MANIFEST_PARSED,function() {
+   video.play();
+   console.log('event');
+});
+}
+</script>
+</html>
