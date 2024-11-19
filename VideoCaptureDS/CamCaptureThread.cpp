@@ -5,9 +5,9 @@ namespace VideoCaptureDS_ns
 	CamCaptureThread::CamCaptureThread(VideoCaptureDS* dev, int source, int width, int height) :
 		omni_thread(), Tango::LogAdapter((TANGO_BASE_CLASS*)dev), device_(dev),
 		local_exit_(ATOMIC_VAR_INIT(false)), is_failed_(ATOMIC_VAR_INIT(false)),
-		cam_(nullptr), image_no_image(nullptr)
-		//contours_(new std::vector<std::vector<cv::Point>>()), hierarchy_(new std::vector<cv::Vec4i>())
+		cam_(nullptr), image_no_image(nullptr), jpeg_params_({ cv::IMWRITE_JPEG_QUALITY, 50 })
 	{
+
 		connect(source, width, height);
 		start_undetached();
 	}
@@ -69,26 +69,25 @@ namespace VideoCaptureDS_ns
 
 			cv::Mat image_converted;
 			cv::Mat image_gray;
-			cv::Mat image_to_jpeg;
 
 			cv::cvtColor(*query.image, image_gray, cv::COLOR_BGR2GRAY);
 
 			get_contours_(image_gray, query.contours, query.ruler, query.threshold);
+			
+			jpeg_params_[1] = query.jpegQuality;
 
 			switch (query.mode)
 			{
 			case vc::CameraMode::RGB:
 				cv::cvtColor(*query.image, image_converted, cv::COLOR_BGR2RGB);
-				cv::cvtColor(*query.image, image_to_jpeg, cv::COLOR_BGR2RGBA);
-				query.jpeg->encode_jpeg_rgb32(image_to_jpeg.data, width_, height_, query.jpegQuality);
+				cv::imencode(".jpg", image_converted, *query.jpeg, jpeg_params_);
 				*query.image = std::move(image_converted);
 				break;
 			case vc::CameraMode::BGR:
-				cv::cvtColor(*query.image, image_to_jpeg, cv::COLOR_BGR2BGRA);
-				query.jpeg->encode_jpeg_rgb32(image_to_jpeg.data, width_, height_, query.jpegQuality);
+				cv::imencode(".jpg", *query.image, *query.jpeg, jpeg_params_);
 				break;
 			case vc::CameraMode::Grayscale:
-				query.jpeg->encode_jpeg_gray8(image_gray.data, width_, height_, query.jpegQuality);
+				cv::imencode(".jpg", image_gray, *query.jpeg, jpeg_params_);
 				*query.image = std::move(image_gray);
 				break;
 			default:
@@ -114,7 +113,7 @@ namespace VideoCaptureDS_ns
 		DEBUG_STREAM << "CamCaptureThread: Thread is stopping" << std::endl;
 	}
 
-	void CamCaptureThread::capture(cv::Mat* image, Tango::EncodedAttribute* jpeg, std::vector<vc::ContourInfo>* contours, const vc::Ruler* ruler,
+	void CamCaptureThread::capture(cv::Mat* image, std::vector<unsigned char>* jpeg, std::vector<vc::ContourInfo>* contours, const vc::Ruler* ruler,
 								   vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status)
 	{
 		omni_mutex_lock lock(queue_mutex_);

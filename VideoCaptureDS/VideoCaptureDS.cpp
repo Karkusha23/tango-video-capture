@@ -353,7 +353,7 @@ void VideoCaptureDS::read_Jpeg(Tango::Attribute &attr)
 	DEBUG_STREAM << "VideoCaptureDS::read_Jpeg(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(VideoCaptureDS::read_Jpeg) ENABLED START -----*/
 	//	Set the attribute value
-	attr.set_value(&jpeg);
+	attr.set_value(attr_Jpeg_read);
 	
 	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_Jpeg
 }
@@ -521,7 +521,7 @@ void VideoCaptureDS::capture()
 
 	DEBUG_STREAM << "VideoCaptureDS: Getting response from thread" << std::endl;
 
-	int size = image_to_show.total() * image_to_show.elemSize() * sizeof(uchar);
+	size_t size = image_to_show.total() * image_to_show.elemSize() * sizeof(uchar);
 
 	if (size <= 3840 * 720)
 	{
@@ -529,12 +529,12 @@ void VideoCaptureDS::capture()
 		push_change_event("Frame", attr_Frame_read, cam_mode == vc::CameraMode::Grayscale ? width : width * 3, height);
 	}
 
-	attr_Jpeg_read->encoded_data.length(jpeg.get_size());
-	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.get_data(), jpeg.get_size());
+	attr_Jpeg_read->encoded_data.length(jpeg.size() * sizeof(unsigned char));
+	std::memcpy(attr_Jpeg_read->encoded_data.NP_data(), jpeg.data(), jpeg.size() * sizeof(unsigned char));
 
 	push_change_event("Jpeg", attr_Jpeg_read);
 
-	int contours_size = contours.size() * sizeof(vc::ContourInfo);
+	size_t contours_size = contours.size() * sizeof(vc::ContourInfo);
 	attr_ContourInfo_read->encoded_data.length(contours_size);
 	std::memcpy(attr_ContourInfo_read->encoded_data.NP_data(), contours.data(), contours_size);
 

@@ -72,7 +72,7 @@ private:
 	vc::CameraMode cam_mode;
 
 	cv::Mat image_to_show;
-	Tango::EncodedAttribute jpeg;
+	std::vector<unsigned char> jpeg;
 
 	class CamCaptureThread* camThread;
 
