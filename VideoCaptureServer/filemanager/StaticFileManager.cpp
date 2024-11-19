@@ -32,20 +32,21 @@ oatpp::String StaticFileManager::getFile(const oatpp::String& filename, bool ign
 	std::lock_guard<oatpp::concurrency::SpinLock> lock(lock_);
 
 	oatpp::String path = path_ + "/" + filename;
-
-	if (!ignore_cache)
+	
+	if (ignore_cache)
 	{
-		auto& file = cache_[filename];
+		return oatpp::String::loadFromFile(path->c_str());
+	}
+	
+	auto& file = cache_[filename];
 
-		if (file)
-		{
-			return file;
-		}
-		file = oatpp::String::loadFromFile(path->c_str());
+	if (file)
+	{
 		return file;
 	}
 
-	return oatpp::String::loadFromFile(path->c_str());
+	file = oatpp::String::loadFromFile(path->c_str());
+	return file;
 }
 
 oatpp::String StaticFileManager::getMimeType(const oatpp::String& filename)

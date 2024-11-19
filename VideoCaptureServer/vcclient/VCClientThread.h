@@ -15,7 +15,7 @@ namespace vc
 		VCClientThread(const char* vc_device_name, const char* playlist_path, const char* playlist_url, int framerate);
 		virtual ~VCClientThread();
 
-		VideoCaptureDevice* vcDevice();
+		VideoCaptureDevice& vcDevice();
 
 	private:
 

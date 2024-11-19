@@ -15,9 +15,9 @@ namespace vc
 		vc_device_.device().unsubscribe_event(event_id_);
 	}
 
-	VideoCaptureDevice* VCClientThread::vcDevice()
+	VideoCaptureDevice& VCClientThread::vcDevice()
 	{
-		return &vc_device_;
+		return vc_device_;
 	}
 
 	void VCClientThread::update()

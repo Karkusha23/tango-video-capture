@@ -8,7 +8,6 @@
 #include <oatpp/parser/json/mapping/ObjectMapper.hpp>
 
 #include "filemanager/StaticFileManager.hpp"
-#include "playlist/Playlist.hpp"
 
 class AppComponent
 {
@@ -47,11 +46,6 @@ public:
 	OATPP_CREATE_COMPONENT(std::shared_ptr<StaticFileManager>, staticFileManager)([]
 	{
 		return StaticFileManager::createShared("C:\\hlsserver");
-	}());
-
-	OATPP_CREATE_COMPONENT(std::shared_ptr<Playlist>, playlist)([]
-	{
-		return std::make_shared<Playlist>("C:\\hlsserver\\playlists\\playlist0.ts");
 	}());
 };
 

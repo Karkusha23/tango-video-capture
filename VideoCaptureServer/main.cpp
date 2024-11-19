@@ -62,6 +62,11 @@ void clearPlaylist(int remain_count)
 {
 	static const std::experimental::filesystem::path path("C:\\hlsserver\\playlists");
 
+	if (remain_count <= 0)
+	{
+		return;
+	}
+
 	std::list<std::string> files;
 
 	for (auto& it : std::experimental::filesystem::directory_iterator(path))

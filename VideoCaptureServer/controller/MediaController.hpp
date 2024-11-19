@@ -7,9 +7,6 @@
 #include <oatpp/core/macro/component.hpp>
 
 #include "../filemanager/StaticFileManager.hpp"
-#include "../playlist/Playlist.hpp"
-
-#include <chrono>
 
 class MediaController : public oatpp::web::server::api::ApiController
 {
@@ -29,7 +26,6 @@ public:
 private:
 
 	OATPP_COMPONENT(std::shared_ptr<StaticFileManager>, staticFileManager);
-	OATPP_COMPONENT(std::shared_ptr<Playlist>, playlist);
 
 	std::shared_ptr<OutgoingResponse> getStaticFileResponse(const oatpp::String& filename, const oatpp::String& rangeHeader, bool ignore_cache = false) const;
 	std::shared_ptr<OutgoingResponse> getFullFileResponse(const oatpp::String& file) const;
