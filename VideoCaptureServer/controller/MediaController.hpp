@@ -7,6 +7,7 @@
 #include <oatpp/core/macro/component.hpp>
 
 #include "../filemanager/StaticFileManager.hpp"
+#include "../vccmanager/VCCManager.hpp"
 
 class MediaController : public oatpp::web::server::api::ApiController
 {
@@ -26,6 +27,7 @@ public:
 private:
 
 	OATPP_COMPONENT(std::shared_ptr<StaticFileManager>, staticFileManager);
+	OATPP_COMPONENT(std::shared_ptr<VCCManager>, vccManager);
 
 	std::shared_ptr<OutgoingResponse> getStaticFileResponse(const oatpp::String& filename, const oatpp::String& rangeHeader, bool ignore_cache = false) const;
 	std::shared_ptr<OutgoingResponse> getFullFileResponse(const oatpp::String& file) const;
@@ -44,6 +46,42 @@ public:
 		Action act() override
 		{
 			return _return(controller->createResponse(Status::CODE_200, pageTemplate));
+		}
+	};
+
+	ENDPOINT_ASYNC("GET", "device_heartbeat/*", Heartbeat)
+	{
+		ENDPOINT_ASYNC_INIT(Heartbeat);
+
+		Action act() override
+		{
+			std::string device_name = request->getPathTail();
+
+			std::cout << "Heartbeat " << device_name << std::endl;
+
+			controller->vccManager->heartBeat(device_name);
+
+			return _return(controller->createResponse(Status::CODE_200, request->getPathTail()));
+		}
+	};
+
+	ENDPOINT_ASYNC("GET", "device/*", Device)
+	{
+		ENDPOINT_ASYNC_INIT(Device);
+
+		const char* pageTemplate = controller->staticFileManager->getFile("templates/device.html")->c_str();
+
+		Action act() override
+		{
+			std::string device_name = request->getPathTail();
+
+			bool res = controller->vccManager->connectDevice(device_name);
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Can not connect to device");
+
+			oatpp::String response = formatText(pageTemplate, device_name.c_str());
+
+			return _return(controller->createResponse(Status::CODE_200, response->c_str()));
 		}
 	};
 

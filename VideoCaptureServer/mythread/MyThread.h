@@ -15,6 +15,8 @@ public:
 	void start();
 	void stop();
 
+	time_t updateTimeMs() const;
+
 protected:
 
 	virtual void update() = 0;

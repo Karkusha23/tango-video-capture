@@ -11,12 +11,6 @@ oatpp::String getFileExtension(const oatpp::String& filename);
 
 class StaticFileManager
 {
-private:
-
-	oatpp::String path_;
-	oatpp::concurrency::SpinLock lock_;
-	std::unordered_map<oatpp::String, oatpp::String> cache_;
-
 public:
 
 	StaticFileManager(const oatpp::String& path);
@@ -25,6 +19,14 @@ public:
 
 	oatpp::String getFile(const oatpp::String& filename, bool ignore_cache = false);
 	oatpp::String getMimeType(const oatpp::String& filename);
+
+private:
+
+	oatpp::String path_;
+	oatpp::concurrency::SpinLock lock_;
+	std::unordered_map<oatpp::String, oatpp::String> cache_;
 };
+
+oatpp::String formatText(const char* text, ...);
 
 #endif

@@ -3,6 +3,8 @@
 
 #include <tango.h>
 
+#include <experimental/filesystem>
+
 #include "VideoCaptureClient.h"
 #include "../mythread/MyThread.h"
 
@@ -21,10 +23,15 @@ namespace vc
 
 		void update() override;
 
+		void clearPlaylist(int remain_count);
+
 		VideoCaptureDevice vc_device_;
 		JpegCallBack jpeg_callback_;
 
 		int event_id_;
+
+		std::string playlist_path_;
+		time_t clear_counter_;
 	};
 }
 

@@ -22,10 +22,10 @@ void clearPlaylist(int remain_count);
 int main()
 {
 	std::thread serverThread(runOatServer);
-	std::thread vcclientThread(runVCClient);
+	//std::thread vcclientThread(runVCClient);
 
 	serverThread.join();
-	vcclientThread.join();
+	//vcclientThread.join();
 
 	return 0;
 }

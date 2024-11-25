@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <queue>
+#include <chrono>
 
 #include <atomic>
 #include <mutex>
@@ -50,17 +51,23 @@ namespace vc
 		struct SwsContext* sws_context_;
 		AVPacket packet_;
 
+		bool wrote_first_frame_;
+		std::chrono::high_resolution_clock::time_point first_frame_time_;
+		time_t next_key_frame_pts_;
+
 		struct WriteQuery
 		{
 			uint8_t* data;
 			int rows;
 			int cols;
+			time_t pts;
 		};
 
 		std::queue<WriteQuery> queue_;
 		std::mutex queue_lock_;
 
 		void write_frame_from_queue_();
+		void write_frame_from_(const WriteQuery& query);
 		void update() override;
 	};
 }

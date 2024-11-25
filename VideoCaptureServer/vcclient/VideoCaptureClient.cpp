@@ -67,6 +67,8 @@ namespace vc
 
 	VideoCaptureDevice::~VideoCaptureDevice()
 	{
+		std::cout << "Entering VideoCaptureClient destructor" << std::endl;
+
 		if (to_show_ui_)
 		{
 			cv::destroyWindow(IMAGE_WINDOW_NAME);
@@ -75,6 +77,8 @@ namespace vc
 
 		delete device_;
 		delete video_encoder_;
+
+		std::cout << "VideoCaptureClient destruction complete" << std::endl;
 	}
 
 	Tango::DeviceProxy& VideoCaptureDevice::device()
@@ -203,6 +207,8 @@ namespace vc
 
 		cv::line(image_, ruler_.start, ruler_.end, RULER_COLOR, 2);
 
+		video_encoder_->writeFrame(image_);
+
 		if (to_show_ui_)
 		{
 			cv::imshow(IMAGE_WINDOW_NAME, image_);
@@ -214,10 +220,10 @@ namespace vc
 		update_threshold_value_();
 		update_ruler_();
 
-		{
+		/*{
 			std::lock_guard<std::mutex> lock(image_lock_);
 			video_encoder_->writeFrame(image_);
-		}
+		}*/
 	}
 
 	void VideoCaptureDevice::set_ruler_point_to(const cv::Point& point)

@@ -41,6 +41,11 @@ void MyThread::stop()
 	}
 }
 
+time_t MyThread::updateTimeMs() const
+{
+	return update_time_ms_;
+}
+
 void MyThread::run_()
 {
 	while (!to_exit_)

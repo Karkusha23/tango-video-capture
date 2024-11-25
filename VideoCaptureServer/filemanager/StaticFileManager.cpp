@@ -72,3 +72,13 @@ oatpp::String StaticFileManager::getMimeType(const oatpp::String& filename)
 
 	return nullptr;
 }
+
+oatpp::String formatText(const char* text, ...)
+{
+	char buffer[4097];
+	va_list args;
+	va_start(args, text);
+	vsnprintf(buffer, 4096, text, args);
+	va_end(args);
+	return oatpp::String(buffer);
+}

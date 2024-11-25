@@ -8,6 +8,7 @@
 #include <oatpp/parser/json/mapping/ObjectMapper.hpp>
 
 #include "filemanager/StaticFileManager.hpp"
+#include "vccmanager/VCCManager.hpp"
 
 class AppComponent
 {
@@ -46,6 +47,11 @@ public:
 	OATPP_CREATE_COMPONENT(std::shared_ptr<StaticFileManager>, staticFileManager)([]
 	{
 		return StaticFileManager::createShared("C:\\hlsserver");
+	}());
+
+	OATPP_CREATE_COMPONENT(std::shared_ptr<VCCManager>, vccManager)([]
+	{
+		return VCCManager::createShared("C:\\hlsserver\\playlists", 10000);
 	}());
 };
 
