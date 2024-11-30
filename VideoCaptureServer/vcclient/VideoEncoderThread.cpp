@@ -2,19 +2,19 @@
 
 namespace vc
 {
-    VideoEncoderThread::VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height, int framerate) :
-        MyThread(500 / framerate),
-        output_format_(av_guess_format("hls", NULL, NULL)), codec_(avcodec_find_encoder(AV_CODEC_ID_H264)), options_(NULL), format_context_(nullptr), framerate_(framerate),
+    VideoEncoderThread::VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height) :
+        MyThread(50),
+        output_format_(av_guess_format("hls", NULL, NULL)), codec_(avcodec_find_encoder(AV_CODEC_ID_H264)), options_(NULL), format_context_(nullptr), framerate_(10),
         frame_count_(0), playlist_path_(playlist_path), playlist_url_(playlist_url), wrote_first_frame_(false), next_key_frame_pts_(2000)
 	{
         std::cout << "Initialising FFMPEG video encoder" << std::endl;
 
         avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_path_.c_str());
-        av_dict_set(&options_, "hls_time", "2", 0); // Set segment duration to 10 seconds
-        av_dict_set(&options_, "hls_init_time", "2", 0);
-        av_dict_set(&options_, "hls_base_url", playlist_url_.c_str(), 0);
-        av_dict_set(&options_, "hls_list_size", "3", 0);
-        av_dict_set(&options_, "hls_flags", "delete_segments", 0);
+        av_dict_set(&options_, "hls_time", "2", 0); // Set segment duration in seconds
+        av_dict_set(&options_, "hls_init_time", "2", 0); // Set initial segment duration in seconds
+        av_dict_set(&options_, "hls_base_url", playlist_url_.c_str(), 0); // Set base url for .ts files
+        av_dict_set(&options_, "hls_list_size", "3", 0); // Set number of segments that are stored in the moment
+        av_dict_set(&options_, "hls_flags", "delete_segments", 0); // To delete obsolete segments
         av_dict_set(&options_, "segment_format", "mpegts", 0);
         av_dict_set(&options_, "segment_list_type", "m3u8", 0);
         av_dict_set(&options_, "segment_list", playlist_path_.c_str(), 0);

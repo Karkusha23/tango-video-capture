@@ -32,7 +32,11 @@ namespace vc
 	{
 	public:
 
-		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, int framerate, bool to_show_ui);
+		// device_name - name of device in Tango system
+		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
+		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
+		// to_show_ui - to show ui on host pc
+		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, bool to_show_ui);
 		~VideoCaptureDevice();
 
 		Tango::DeviceProxy& device();

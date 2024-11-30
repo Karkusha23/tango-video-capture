@@ -12,15 +12,22 @@ oatpp::String getFileExtension(const oatpp::String& filename);
 oatpp::String formatText(const char* text, ...);
 oatpp::String getMimeType(const oatpp::String& filename);
 
+// Static file manager for Oat++ server
+
 class StaticFileManager
 {
 public:
 
+	// path is path of server file folder
 	StaticFileManager(const oatpp::String& path);
 
 	static std::shared_ptr<StaticFileManager> createShared(const oatpp::String& path);
 
+	// Get contents of file in server file folder
+	// If ignore_cache==false, file contents are stored in cache
 	oatpp::String getFile(const oatpp::String& filename, bool ignore_cache = false);
+
+	// If file exists in sever file folder
 	bool isFileExists(const std::string& filename);
 
 private:

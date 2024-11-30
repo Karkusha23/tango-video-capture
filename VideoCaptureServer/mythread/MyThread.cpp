@@ -9,36 +9,32 @@ MyThread::~MyThread()
 
 void MyThread::start()
 {
+	std::lock_guard<std::mutex> lock(thread_mutex_);
+	
 	if (is_started_)
 	{
 		return;
 	}
 
-	{
-		std::lock_guard<std::mutex> lock(thread_mutex_);
-
-		to_exit_ = false;
-		thread_ = new std::thread(&MyThread::run_, this);
-		is_started_ = true;
-	}
+	to_exit_ = false;
+	thread_ = new std::thread(&MyThread::run_, this);
+	is_started_ = true;
 }
 
 void MyThread::stop()
 {
+	std::lock_guard<std::mutex> lock(thread_mutex_);
+
 	if (to_exit_ || !thread_)
 	{
 		return;
 	}
 
-	{
-		std::lock_guard<std::mutex> lock(thread_mutex_);
-
-		to_exit_ = true;
-		thread_->join();
-		delete thread_;
-		thread_ = nullptr;
-		is_started_ = false;
-	}
+	to_exit_ = true;
+	thread_->join();
+	delete thread_;
+	thread_ = nullptr;
+	is_started_ = false;
 }
 
 time_t MyThread::updateTimeMs() const

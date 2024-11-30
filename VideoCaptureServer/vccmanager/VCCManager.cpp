@@ -38,7 +38,7 @@ bool VCCManager::connectDevice(const std::string& device_name)
 
 	try
 	{
-		device = std::make_shared<vc::VCClientThread>(device_name.c_str(), (path + "\\playlist.m3u8").c_str(), url.c_str(), 10);
+		device = std::make_shared<vc::VCClientThread>(device_name.c_str(), (path + "\\playlist.m3u8").c_str(), url.c_str());
 	}
 	catch (...)
 	{

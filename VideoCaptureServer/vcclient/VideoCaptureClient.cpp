@@ -18,7 +18,7 @@ namespace vc
 		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 	}
 
-	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, int framerate, bool to_show_ui) : to_show_ui_(to_show_ui)
+	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, bool to_show_ui) : to_show_ui_(to_show_ui)
 	{
 		std::cout << "Entering VideoCaptureDevice constructor" << std::endl;
 
@@ -60,7 +60,7 @@ namespace vc
 
 		image_ = cv::Mat(height_, width_, CV_8UC3);
 
-		video_encoder_ = new VideoEncoderThread(playlist_path, playlist_url, width_, height_, framerate);
+		video_encoder_ = new VideoEncoderThread(playlist_path, playlist_url, width_, height_);
 
 		std::cout << "VideoCaptureClient initialisation complete" << std::endl;
 	}

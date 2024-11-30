@@ -24,15 +24,20 @@ extern "C"
 
 #include "../mythread/MyThread.h"
 
+// Thread dedicated to encoding stream of OpenCV images to .m3u8 HLS playlist using FFMPEG
+
 namespace vc
 {
 	class VideoEncoderThread : public MyThread
 	{
 	public:
 
-		VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height, int framerate);
+		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
+		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
+		VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height);
 		virtual ~VideoEncoderThread();
 
+		// Write frame to the queue
 		void writeFrame(const cv::Mat& image);
 
 	private:
@@ -66,8 +71,12 @@ namespace vc
 		std::queue<WriteQuery> queue_;
 		std::mutex queue_lock_;
 
+		// Get first image from queue and write it to playlist
 		void write_frame_from_queue_();
+
+		// Write frame from query
 		void write_frame_from_(const WriteQuery& query);
+
 		void update() override;
 	};
 }

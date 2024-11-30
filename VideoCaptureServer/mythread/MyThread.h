@@ -5,6 +5,9 @@
 #include <mutex>
 #include <atomic>
 
+// Abstract base class for thread
+// Thread calls update() function every update_time_ms milliseconds
+
 class MyThread
 {
 public:

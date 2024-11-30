@@ -10,25 +10,31 @@
 #include "filemanager/StaticFileManager.hpp"
 #include "vccmanager/VCCManager.hpp"
 
+// Defining Oat++ app componentsa
+
 class AppComponent
 {
 public:
 
+	// Server connection provider component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::network::ServerConnectionProvider>, serverConnectionProvider)([]
 	{ 
 		return oatpp::network::tcp::server::ConnectionProvider::createShared({ "localhost", 8000, oatpp::network::Address::IP_4 }); 
 	}());
 
+	// Http router component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, httpRouter)([]
 	{
 		return oatpp::web::server::HttpRouter::createShared();
 	}());
 
+	// Async executor component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::async::Executor>, executor)([]
 	{
 		return std::make_shared<oatpp::async::Executor>(4, 1, 1);
 	}());
 
+	// Server connection handler component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, serverConnectionHandler)([]
 	{
 		OATPP_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, router);
@@ -36,6 +42,7 @@ public:
 		return oatpp::web::server::AsyncHttpConnectionHandler::createShared(router, executor);
 	}());
 
+	// Object mapper component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, apiObjectMapper)([]
 	{
 		auto serializerConfig = oatpp::parser::json::mapping::Serializer::Config::createShared();
@@ -44,11 +51,13 @@ public:
 		return oatpp::parser::json::mapping::ObjectMapper::createShared(serializerConfig, deserializerConfig);
 	}());
 
+	// File manager component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<StaticFileManager>, staticFileManager)([]
 	{
 		return StaticFileManager::createShared("C:\\hlsserver");
 	}());
 
+	// Video Capture Client manager component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<VCCManager>, vccManager)([]
 	{
 		return VCCManager::createShared("C:\\hlsserver\\playlists", 10000);

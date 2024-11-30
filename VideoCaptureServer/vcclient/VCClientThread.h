@@ -8,13 +8,16 @@
 #include "VideoCaptureClient.h"
 #include "../mythread/MyThread.h"
 
+// Thread wrapper for Video Capture Client
+// Contains Video Capture Client instance itself and callback for image change event
+
 namespace vc
 {
 	class VCClientThread : public MyThread
 	{
 	public:
 
-		VCClientThread(const char* vc_device_name, const char* playlist_path, const char* playlist_url, int framerate);
+		VCClientThread(const char* vc_device_name, const char* playlist_path, const char* playlist_url);
 		virtual ~VCClientThread();
 
 		VideoCaptureDevice& vcDevice();
@@ -23,15 +26,10 @@ namespace vc
 
 		void update() override;
 
-		void clearPlaylist(int remain_count);
-
 		VideoCaptureDevice vc_device_;
 		JpegCallBack jpeg_callback_;
 
 		int event_id_;
-
-		std::string playlist_path_;
-		time_t clear_counter_;
 	};
 }
 
