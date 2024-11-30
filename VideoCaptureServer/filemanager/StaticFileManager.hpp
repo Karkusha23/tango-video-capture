@@ -6,8 +6,11 @@
 
 #include <unordered_map>
 #include <string>
+#include <experimental/filesystem>
 
 oatpp::String getFileExtension(const oatpp::String& filename);
+oatpp::String formatText(const char* text, ...);
+oatpp::String getMimeType(const oatpp::String& filename);
 
 class StaticFileManager
 {
@@ -18,15 +21,14 @@ public:
 	static std::shared_ptr<StaticFileManager> createShared(const oatpp::String& path);
 
 	oatpp::String getFile(const oatpp::String& filename, bool ignore_cache = false);
-	oatpp::String getMimeType(const oatpp::String& filename);
+	bool isFileExists(const std::string& filename);
 
 private:
 
-	oatpp::String path_;
+	oatpp::String path_string_;
+	std::experimental::filesystem::path path_;
 	oatpp::concurrency::SpinLock lock_;
 	std::unordered_map<oatpp::String, oatpp::String> cache_;
 };
-
-oatpp::String formatText(const char* text, ...);
 
 #endif

@@ -47,6 +47,12 @@ bool VCCManager::connectDevice(const std::string& device_name)
 
 	{
 		std::lock_guard<std::mutex> lock(map_lock_);
+
+		if (std::experimental::filesystem::exists(path))
+		{
+			std::experimental::filesystem::remove_all(path);
+		}
+
 		std::experimental::filesystem::create_directory(path);
 		devices_[device_name] = { device, true };
 	}
@@ -71,8 +77,11 @@ bool VCCManager::disconnectDevice(const std::string& device_name)
 			return false;
 		}
 
-		std::experimental::filesystem::remove(path);
 		devices_.erase(device_name);
+		if (std::experimental::filesystem::exists(path))
+		{
+			std::experimental::filesystem::remove_all(path);
+		}
 	}
 
 	return true;

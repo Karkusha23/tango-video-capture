@@ -20,36 +20,17 @@ oatpp::String getFileExtension(const oatpp::String& filename)
 	return oatpp::String((const char*)&filename->data()[i + 1], filename->size() - i - 1);
 }
 
-StaticFileManager::StaticFileManager(const oatpp::String& path) : path_(path) {}
-
-std::shared_ptr<StaticFileManager> StaticFileManager::createShared(const oatpp::String& path)
+oatpp::String formatText(const char* text, ...)
 {
-	return std::make_shared<StaticFileManager>(path);
+	char buffer[4097];
+	va_list args;
+	va_start(args, text);
+	vsnprintf(buffer, 4096, text, args);
+	va_end(args);
+	return oatpp::String(buffer);
 }
 
-oatpp::String StaticFileManager::getFile(const oatpp::String& filename, bool ignore_cache)
-{
-	std::lock_guard<oatpp::concurrency::SpinLock> lock(lock_);
-
-	oatpp::String path = path_ + "/" + filename;
-	
-	if (ignore_cache)
-	{
-		return oatpp::String::loadFromFile(path->c_str());
-	}
-	
-	auto& file = cache_[filename];
-
-	if (file)
-	{
-		return file;
-	}
-
-	file = oatpp::String::loadFromFile(path->c_str());
-	return file;
-}
-
-oatpp::String StaticFileManager::getMimeType(const oatpp::String& filename)
+oatpp::String getMimeType(const oatpp::String& filename)
 {
 	oatpp::String ext = getFileExtension(filename);
 
@@ -73,12 +54,36 @@ oatpp::String StaticFileManager::getMimeType(const oatpp::String& filename)
 	return nullptr;
 }
 
-oatpp::String formatText(const char* text, ...)
+StaticFileManager::StaticFileManager(const oatpp::String& path) : path_string_(path), path_(std::string(path)) {}
+
+std::shared_ptr<StaticFileManager> StaticFileManager::createShared(const oatpp::String& path)
 {
-	char buffer[4097];
-	va_list args;
-	va_start(args, text);
-	vsnprintf(buffer, 4096, text, args);
-	va_end(args);
-	return oatpp::String(buffer);
+	return std::make_shared<StaticFileManager>(path);
+}
+
+oatpp::String StaticFileManager::getFile(const oatpp::String& filename, bool ignore_cache)
+{
+	std::lock_guard<oatpp::concurrency::SpinLock> lock(lock_);
+
+	oatpp::String path = path_string_ + "/" + filename;
+	
+	if (ignore_cache)
+	{
+		return oatpp::String::loadFromFile(path->c_str());
+	}
+	
+	auto& file = cache_[filename];
+
+	if (file)
+	{
+		return file;
+	}
+
+	file = oatpp::String::loadFromFile(path->c_str());
+	return file;
+}
+
+bool StaticFileManager::isFileExists(const std::string& filename)
+{
+	return std::experimental::filesystem::exists(path_ / filename);
 }

@@ -20,7 +20,7 @@ std::shared_ptr<MediaController::OutgoingResponse> MediaController::getStaticFil
 	response->putHeader("Accept-Ranges", "bytes");
 	response->putHeader(Header::CONNECTION, Header::Value::CONNECTION_KEEP_ALIVE);
 
-	oatpp::String mimeType = staticFileManager->getMimeType(filename);
+	oatpp::String mimeType = getMimeType(filename);
 	if (mimeType)
 	{
 		response->putHeader(Header::CONTENT_TYPE, mimeType);

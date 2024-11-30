@@ -21,11 +21,25 @@ void clearPlaylist(int remain_count);
 
 int main()
 {
-	std::thread serverThread(runOatServer);
+	//std::thread serverThread(runOatServer);
 	//std::thread vcclientThread(runVCClient);
 
-	serverThread.join();
+	//serverThread.join();
 	//vcclientThread.join();
+
+	oatpp::base::Environment::init();
+
+	AppComponent components;
+
+	components.httpRouter.getObject()->addController(MediaController::createShared());
+
+	oatpp::network::Server server(components.serverConnectionProvider.getObject(), components.serverConnectionHandler.getObject());
+
+	OATPP_LOGI("MyApp", "Server running on port %s", components.serverConnectionProvider.getObject()->getProperty("port").getData());
+
+	server.run();
+
+	oatpp::base::Environment::destroy();
 
 	return 0;
 }

@@ -22,7 +22,6 @@ public:
 	{
 		return std::make_shared<MediaController>(objectMapper);
 	}
-	
 
 private:
 
@@ -49,23 +48,27 @@ public:
 		}
 	};
 
-	ENDPOINT_ASYNC("GET", "device_heartbeat/*", Heartbeat)
+	ENDPOINT_ASYNC("GET", "device/{domain}/{group}/{instance}/heartbeat", Heartbeat)
 	{
 		ENDPOINT_ASYNC_INIT(Heartbeat);
 
 		Action act() override
 		{
-			std::string device_name = request->getPathTail();
+			std::string domain = request->getPathVariable("domain");
+			std::string group = request->getPathVariable("group");
+			std::string instance = request->getPathVariable("instance");
+
+			std::string device_name = domain + "/" + group + "/" + instance;
 
 			std::cout << "Heartbeat " << device_name << std::endl;
 
 			controller->vccManager->heartBeat(device_name);
 
-			return _return(controller->createResponse(Status::CODE_200, request->getPathTail()));
+			return _return(controller->createResponse(Status::CODE_200, "OK"));
 		}
 	};
 
-	ENDPOINT_ASYNC("GET", "device/*", Device)
+	ENDPOINT_ASYNC("GET", "device/{domain}/{group}/{instance}", Device)
 	{
 		ENDPOINT_ASYNC_INIT(Device);
 
@@ -73,7 +76,11 @@ public:
 
 		Action act() override
 		{
-			std::string device_name = request->getPathTail();
+			std::string domain = request->getPathVariable("domain");
+			std::string group = request->getPathVariable("group");
+			std::string instance = request->getPathVariable("instance");
+
+			std::string device_name = domain + "/" + group + "/" + instance;
 
 			bool res = controller->vccManager->connectDevice(device_name);
 
@@ -95,6 +102,19 @@ public:
 			OATPP_ASSERT_HTTP(filename, Status::CODE_400, "Filename is empty");
 			auto range = request->getHeader(Header::RANGE);
 			return _return(controller->getStaticFileResponse(filename, range, true));
+		}
+	};
+
+	ENDPOINT_ASYNC("GET", "media_exists/*", MediaExists)
+	{
+		ENDPOINT_ASYNC_INIT(MediaExists);
+
+		Action act() override
+		{
+			oatpp::String filename = request->getPathTail();
+			OATPP_ASSERT_HTTP(filename, Status::CODE_400, "Filename is empty");
+			bool exists = controller->staticFileManager->isFileExists(filename);
+			return _return(controller->createResponse(Status::CODE_200, exists ? "1" : "0"));
 		}
 	};
 
