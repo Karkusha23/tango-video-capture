@@ -36,7 +36,7 @@ namespace vc
 		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
 		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
 		// to_show_ui - to show ui on host pc
-		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, bool to_show_ui);
+		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url);
 		~VideoCaptureDevice();
 
 		Tango::DeviceProxy& device();
@@ -67,8 +67,6 @@ namespace vc
 		std::vector<unsigned char> jpg_;
 
 		std::mutex image_lock_;
-
-		const bool to_show_ui_;
 
 		CameraMode cam_mode_;
 		int width_;
@@ -110,7 +108,7 @@ namespace vc
 		void push_event(Tango::EventData* event_data) override { dev_->event_on_Jpeg_change(event_data); }
 	};
 
-	void image_mouse_callback(int event, int x, int y, int flags, void* param);
+	//void image_mouse_callback(int event, int x, int y, int flags, void* param);
 }
 
 #endif

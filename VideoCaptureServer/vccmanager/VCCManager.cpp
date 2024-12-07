@@ -19,6 +19,8 @@ std::string VCCManager::formatDeviceName(const std::string& device_name)
 
 bool VCCManager::connectDevice(const std::string& device_name)
 {
+	std::string name, path;
+
 	{
 		std::lock_guard<std::mutex> lock(map_lock_);
 		if (devices_.count(device_name))
@@ -26,11 +28,17 @@ bool VCCManager::connectDevice(const std::string& device_name)
 			devices_[device_name].heartbeat = true;
 			return true;
 		}
+
+		name = formatDeviceName(device_name);
+		path = playlists_path_ + "\\" + name;
+
+		if (std::experimental::filesystem::exists(path))
+		{
+			std::experimental::filesystem::remove_all(path);
+		}
+
+		std::experimental::filesystem::create_directory(path);
 	}
-
-	std::string name = formatDeviceName(device_name);
-
-	std::string path = playlists_path_ + "\\" + name;
 
 	std::string url = std::string("http://localhost:8000/media_no_cache/playlists/") + name + "/";
 
@@ -47,13 +55,6 @@ bool VCCManager::connectDevice(const std::string& device_name)
 
 	{
 		std::lock_guard<std::mutex> lock(map_lock_);
-
-		if (std::experimental::filesystem::exists(path))
-		{
-			std::experimental::filesystem::remove_all(path);
-		}
-
-		std::experimental::filesystem::create_directory(path);
 		devices_[device_name] = { device, true };
 	}
 

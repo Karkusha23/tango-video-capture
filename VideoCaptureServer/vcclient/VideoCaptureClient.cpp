@@ -18,7 +18,7 @@ namespace vc
 		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 	}
 
-	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, bool to_show_ui) : to_show_ui_(to_show_ui)
+	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url)
 	{
 		std::cout << "Entering VideoCaptureDevice constructor" << std::endl;
 
@@ -43,7 +43,7 @@ namespace vc
 
 		mouse_flipflop_ = false;
 
-		if (to_show_ui_)
+		/*if (to_show_ui_)
 		{
 			cv::namedWindow(IMAGE_WINDOW_NAME);
 			cv::setMouseCallback(IMAGE_WINDOW_NAME, image_mouse_callback, this);
@@ -56,7 +56,7 @@ namespace vc
 			cv::createTrackbar("Ruler End   X", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.end.x, width_);
 			cv::createTrackbar("Ruler End   Y", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.end.y, height_);
 			cv::createTrackbar("Ruler length", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_length_, 1000);
-		}
+		}*/
 
 		image_ = cv::Mat(height_, width_, CV_8UC3);
 
@@ -69,11 +69,11 @@ namespace vc
 	{
 		std::cout << "Entering VideoCaptureClient destructor" << std::endl;
 
-		if (to_show_ui_)
+		/*if (to_show_ui_)
 		{
 			cv::destroyWindow(IMAGE_WINDOW_NAME);
 			cv::destroyWindow(IMAGE_PARAMETERS_WINDOW_NAME);
-		}
+		}*/
 
 		delete device_;
 		delete video_encoder_;
@@ -209,10 +209,10 @@ namespace vc
 
 		video_encoder_->writeFrame(image_);
 
-		if (to_show_ui_)
+		/*if (to_show_ui_)
 		{
 			cv::imshow(IMAGE_WINDOW_NAME, image_);
-		}
+		}*/
 	}
 
 	void VideoCaptureDevice::update()
@@ -297,11 +297,11 @@ namespace vc
 		device_->write_attribute(ruler_write);
 	}
 
-	void image_mouse_callback(int event, int x, int y, int flags, void* param)
+	/*void image_mouse_callback(int event, int x, int y, int flags, void* param)
 	{
 		if (event & cv::EVENT_LBUTTONDOWN)
 		{
 			reinterpret_cast<VideoCaptureDevice*>(param)->set_ruler_point_to(cv::Point(x, y));
 		}
-	}
+	}*/
 }
