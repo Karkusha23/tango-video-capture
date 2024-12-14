@@ -1,8 +1,16 @@
-function httpRequest(url)
+function httpGetRequest(url)
 {
   var xmlHttp = new XMLHttpRequest();
-  xmlHttp.open("GET", url, false); // false for synchronous request
+  xmlHttp.open("GET", url, false);
   xmlHttp.send(null);
+  return xmlHttp.responseText;
+}
+
+function httpPostRequest(url, body)
+{
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.open("POST", url, false);
+  xmlHttp.send(body)
   return xmlHttp.responseText;
 }
 
@@ -14,9 +22,14 @@ if(Hls.isSupported())
   var hls = new Hls();
   var deviceName = data.getAttribute('device')
   var deviceHeartbeatUrl = '/device/' + deviceName + '/heartbeat';
+  var deviceParamsUrl = '/device/' + deviceName + '/params';
   var sourceUrl = '/media_no_cache/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8';
   var sourceExistsUrl = '/media_exists/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8';
   var readyToLoad = false
+
+  var newdeviceparams = { rulerEndX: 100, rulerEndY: 100, rulerLength: 100, threshold: 25 };
+
+  document.getElementById('post_params').addEventListener('click', function() { httpPostRequest(deviceParamsUrl, JSON.stringify(newdeviceparams)); })
 
   hls.on(Hls.Events.error, function(event, data)
   {
@@ -24,7 +37,7 @@ if(Hls.isSupported())
     console.log('Hls error');
   })
 
-  hls.on(Hls.Events.MANIFEST_PARSED,function() 
+  hls.on(Hls.Events.MANIFEST_PARSED, function() 
   {
     video.play();
     console.log('event');
@@ -35,7 +48,9 @@ if(Hls.isSupported())
     while (true)
       {
         await sleep(2000);
-        httpRequest(deviceHeartbeatUrl);
+        httpPostRequest(deviceHeartbeatUrl, '');
+        var device_params = JSON.parse(httpGetRequest(deviceParamsUrl));
+        console.log(device_params);
         console.log('Heartbeat');
       }
     })();
@@ -44,7 +59,7 @@ if(Hls.isSupported())
   (async () => {
     while (true)
     {
-      var res = httpRequest(sourceExistsUrl);
+      var res = httpGetRequest(sourceExistsUrl);
       if (res == '1')
       {
         break;
