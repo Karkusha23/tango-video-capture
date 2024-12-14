@@ -8,6 +8,7 @@
 
 #include "../filemanager/StaticFileManager.hpp"
 #include "../vccmanager/VCCManager.hpp"
+#include "../dtos/VCParams.hpp"
 
 // Api controller for Oat++ server that defines processable urls, corresponding actions and responses
 
@@ -27,6 +28,7 @@ public:
 
 private:
 
+	OATPP_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, apiObjectMapper);
 	OATPP_COMPONENT(std::shared_ptr<StaticFileManager>, staticFileManager);
 	OATPP_COMPONENT(std::shared_ptr<VCCManager>, vccManager);
 
@@ -48,31 +50,6 @@ public:
 		Action act() override
 		{
 			return _return(controller->createResponse(Status::CODE_200, pageTemplate));
-		}
-	};
-
-	// Heartbeat of Video Capture Device
-	// Fronted JS application send GET request to this address for server to know that this particular device is needed
-	// If no heartbeat sent for certain device in 10 seconds, thread that process this device is shut down
-	ENDPOINT_ASYNC("GET", "device/{domain}/{group}/{instance}/heartbeat", Heartbeat)
-	{
-		ENDPOINT_ASYNC_INIT(Heartbeat);
-
-		Action act() override
-		{
-			std::string domain = request->getPathVariable("domain");
-			std::string group = request->getPathVariable("group");
-			std::string instance = request->getPathVariable("instance");
-
-			std::string device_name = domain + "/" + group + "/" + instance;
-
-			std::cout << "Heartbeat " << device_name << std::endl;
-
-			bool res = controller->vccManager->heartBeat(device_name);
-
-			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to device");
-
-			return _return(controller->createResponse(Status::CODE_200, "OK"));
 		}
 	};
 
@@ -99,6 +76,80 @@ public:
 			oatpp::String response = formatText(pageTemplate, device_name.c_str());
 
 			return _return(controller->createResponse(Status::CODE_200, response->c_str()));
+		}
+	};
+
+	ENDPOINT_ASYNC("GET", "device/{domain}/{group}/{instance}/params", GetDeviceParams)
+	{
+		ENDPOINT_ASYNC_INIT(GetDeviceParams);
+
+		Action act() override
+		{
+			std::string domain = request->getPathVariable("domain");
+			std::string group = request->getPathVariable("group");
+			std::string instance = request->getPathVariable("instance");
+
+			std::string device_name = domain + "/" + group + "/" + instance;
+
+			vc::VideoCaptureDevice::Params params;
+
+			bool res = controller->vccManager->getParams(device_name, params);
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Can not connect to device");
+
+			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(vcparams_to_dto(params))->c_str()));
+		}
+	};
+
+
+	// Heartbeat of Video Capture Device
+	// Fronted JS application send GET request to this address for server to know that this particular device is needed
+	// If no heartbeat sent for certain device in 10 seconds, thread that process this device is shut down
+	ENDPOINT_ASYNC("POST", "device/{domain}/{group}/{instance}/heartbeat", Heartbeat)
+	{
+		ENDPOINT_ASYNC_INIT(Heartbeat);
+
+		Action act() override
+		{
+			std::string domain = request->getPathVariable("domain");
+			std::string group = request->getPathVariable("group");
+			std::string instance = request->getPathVariable("instance");
+
+			std::string device_name = domain + "/" + group + "/" + instance;
+
+			std::cout << "Heartbeat " << device_name << std::endl;
+
+			bool res = controller->vccManager->heartBeat(device_name);
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to device");
+
+			return _return(controller->createResponse(Status::CODE_200, "OK"));
+		}
+	};
+
+	// Set device params
+	ENDPOINT_ASYNC("POST", "device/{domain}/{group}/{instance}/params", PostDeviceParams)
+	{
+		ENDPOINT_ASYNC_INIT(PostDeviceParams);
+
+		Action act() override
+		{
+			return request->readBodyToDtoAsync<oatpp::Object<VCParamsDTO>>(controller->getDefaultObjectMapper()).callbackTo(&PostDeviceParams::returnResponse);
+		}
+
+		Action returnResponse(const oatpp::Object<VCParamsDTO>& body)
+		{
+			std::string domain = request->getPathVariable("domain");
+			std::string group = request->getPathVariable("group");
+			std::string instance = request->getPathVariable("instance");
+
+			std::string device_name = domain + "/" + group + "/" + instance;
+
+			bool res = controller->vccManager->setParams(device_name, vcparams_from_dto(body));
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to device");
+
+			return _return(controller->createResponse(Status::CODE_200, "OK"));
 		}
 	};
 

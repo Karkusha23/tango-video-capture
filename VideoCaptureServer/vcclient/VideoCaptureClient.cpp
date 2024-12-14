@@ -217,13 +217,22 @@ namespace vc
 
 	void VideoCaptureDevice::update()
 	{
+		std::lock_guard<std::mutex> lock(params_lock_);
 		update_threshold_value_();
 		update_ruler_();
+	}
 
-		/*{
-			std::lock_guard<std::mutex> lock(image_lock_);
-			video_encoder_->writeFrame(image_);
-		}*/
+	VideoCaptureDevice::Params VideoCaptureDevice::get_params()
+	{
+		std::lock_guard<std::mutex> lock(params_lock_);
+		return { ruler_, threshold_ };
+	}
+
+	void VideoCaptureDevice::set_params(const VideoCaptureDevice::Params& params)
+	{
+		std::lock_guard<std::mutex> lock(params_lock_);
+		ruler_ = params.ruler;
+		threshold_ = params.threshold;
 	}
 
 	void VideoCaptureDevice::set_ruler_point_to(const cv::Point& point)

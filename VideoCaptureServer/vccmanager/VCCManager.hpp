@@ -28,6 +28,8 @@ public:
 	bool disconnectDevice(const std::string& device_name);
 	bool isDeviceConnected(const std::string& device_name);
 	bool heartBeat(const std::string& device_name);
+	bool getParams(const std::string& device_name, vc::VideoCaptureDevice::Params& params);
+	bool setParams(const std::string& device_name, const vc::VideoCaptureDevice::Params& params);
 
 private:
 

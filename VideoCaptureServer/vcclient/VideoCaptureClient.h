@@ -55,6 +55,16 @@ namespace vc
 		// Called once in every update_time milliseconds
 		void update();
 
+		class Params
+		{
+		public:
+			Ruler ruler;
+			int threshold;
+		};
+
+		Params get_params();
+		void set_params(const Params& params);
+
 		void set_ruler_point_to(const cv::Point& point);
 
 	private:
@@ -67,6 +77,7 @@ namespace vc
 		std::vector<unsigned char> jpg_;
 
 		std::mutex image_lock_;
+		std::mutex params_lock_;
 
 		CameraMode cam_mode_;
 		int width_;

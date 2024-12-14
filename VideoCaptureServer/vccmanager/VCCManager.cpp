@@ -108,6 +108,36 @@ bool VCCManager::heartBeat(const std::string& device_name)
 	return true;
 }
 
+bool VCCManager::getParams(const std::string& device_name, vc::VideoCaptureDevice::Params& params)
+{
+	std::lock_guard<std::mutex> lock(map_lock_);
+
+	if (!devices_.count(device_name))
+	{
+		return false;
+	}
+
+	params = devices_[device_name].device->vcDevice().get_params();
+	devices_[device_name].heartbeat = true;
+
+	return true;
+}
+
+bool VCCManager::setParams(const std::string& device_name, const vc::VideoCaptureDevice::Params& params)
+{
+	std::lock_guard<std::mutex> lock(map_lock_);
+
+	if (!devices_.count(device_name))
+	{
+		return false;
+	}
+
+	devices_[device_name].device->vcDevice().set_params(params);
+	devices_[device_name].heartbeat = true;
+
+	return true;
+}
+
 void VCCManager::update()
 {
 	std::list<std::string> delete_list;
