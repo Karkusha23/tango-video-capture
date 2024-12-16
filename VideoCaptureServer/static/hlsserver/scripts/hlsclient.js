@@ -27,9 +27,20 @@ if(Hls.isSupported())
   var sourceExistsUrl = '/media_exists/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8';
   var readyToLoad = false
 
-  var newdeviceparams = { rulerEndX: 100, rulerEndY: 100, rulerLength: 100, threshold: 25 };
+  var deviceParamEl = document.getElementById('params')
 
-  document.getElementById('post_params').addEventListener('click', function() { httpPostRequest(deviceParamsUrl, JSON.stringify(newdeviceparams)); })
+  document.getElementById('post_params').addEventListener('click', function() 
+  { 
+    var newDeviceParams = {
+      rulerStartX: Number(document.getElementById('ruler_start_x').value) ?? 0,
+      rulerStartY: Number(document.getElementById('ruler_start_y').value) ?? 0,
+      rulerEndX: Number(document.getElementById('ruler_end_x').value) ?? 0,
+      rulerEndY: Number(document.getElementById('ruler_end_y').value) ?? 0,
+      rulerLength: Number(document.getElementById('ruler_length').value) ?? 0,
+      threshold: Number(document.getElementById('threshold').value) ?? 25
+    }
+    httpPostRequest(deviceParamsUrl, JSON.stringify(newDeviceParams)); 
+  })
 
   hls.on(Hls.Events.error, function(event, data)
   {
@@ -48,9 +59,7 @@ if(Hls.isSupported())
     while (true)
       {
         await sleep(2000);
-        httpPostRequest(deviceHeartbeatUrl, '');
-        var device_params = JSON.parse(httpGetRequest(deviceParamsUrl));
-        console.log(device_params);
+        deviceParamEl.innerHTML = httpGetRequest(deviceParamsUrl);
         console.log('Heartbeat');
       }
     })();

@@ -4,10 +4,19 @@
         <title id="title"></title>
     </head>
     <body>
+        <h1 id="h1"></h1>
+        <video id="video" width="640" height="480" autoplay controls></video>
         <p id="params"></p>
-        <input id="post_params" type="button" value="post"/>
-        <video id="video" width="640" height="480" autoplay controls class="videoCentered"></video>
-        </body>
+        <p>
+            <input id="ruler_start_x", type="number"/>
+            <input id="ruler_start_y", type="number"/>
+            <input id="ruler_end_x", type="number"/>
+            <input id="ruler_end_y", type="number"/>
+            <input id="ruler_length", type="number"/>
+            <input id="threshold", type="number"/>
+            <input id="post_params" type="button" value="post"/>
+        </p>
+    </body>
     <data id="data" device="%s">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="/media/scripts/hlsclient.js"></script>
