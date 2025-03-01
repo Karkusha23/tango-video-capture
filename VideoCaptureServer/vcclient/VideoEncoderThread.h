@@ -42,23 +42,25 @@ namespace vc
 
 	private:
 
-		std::string playlist_path_;
-		std::string playlist_url_;
-		int framerate_;
+		const std::string playlist_path_;
+		const std::string playlist_url_;
+
+		const int framerate_;
 		int frame_count_;
-		AVFormatContext* format_context_;
+
 		const AVOutputFormat* output_format_;
+		const AVCodec* codec_;
+
+		AVFormatContext* format_context_;
 		AVDictionary* options_;
 		AVStream* stream_;
-		const AVCodec* codec_;
 		AVCodecContext* codec_context_;
 		AVFrame* av_frame_;
-		struct SwsContext* sws_context_;
+		SwsContext* sws_context_;
 		AVPacket packet_;
 
 		bool wrote_first_frame_;
 		std::chrono::high_resolution_clock::time_point first_frame_time_;
-		time_t next_key_frame_pts_;
 
 		struct WriteQuery
 		{
