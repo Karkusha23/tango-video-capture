@@ -40,6 +40,7 @@ namespace vc
 		~VideoCaptureDevice();
 
 		Tango::DeviceProxy& device();
+		std::string deviceName() const;
 		cv::Mat image();
 		unsigned char* image_data();
 		std::vector<unsigned char> jpg();
@@ -70,6 +71,7 @@ namespace vc
 	private:
 
 		Tango::DeviceProxy* device_;
+		std::string device_name_;
 
 		VideoEncoderThread* video_encoder_;
 

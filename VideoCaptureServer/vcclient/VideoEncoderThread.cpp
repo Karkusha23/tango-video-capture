@@ -3,7 +3,7 @@
 namespace vc
 {
     VideoEncoderThread::VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height) :
-        MyThread(50),
+        MyThread(25),
         output_format_(av_guess_format("hls", NULL, NULL)), codec_(avcodec_find_encoder(AV_CODEC_ID_H264)), framerate_(10),
         frame_count_(0), playlist_path_(playlist_path), playlist_url_(playlist_url), wrote_first_frame_(false)
 	{

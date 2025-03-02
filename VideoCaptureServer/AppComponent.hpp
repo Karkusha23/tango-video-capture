@@ -10,7 +10,7 @@
 #include "filemanager/StaticFileManager.hpp"
 #include "vccmanager/VCCManager.hpp"
 
-// Defining Oat++ app componentsa
+// Defining Oat++ app components
 
 class AppComponent
 {
@@ -60,7 +60,7 @@ public:
 	// Video Capture Client manager component
 	OATPP_CREATE_COMPONENT(std::shared_ptr<VCCManager>, vccManager)([]
 	{
-		return VCCManager::createShared("C:\\hlsserver\\playlists", 10000);
+		return VCCManager::createShared("C:\\hlsserver\\playlists", "http://localhost:8000/media_no_cache/playlists/", 10000);
 	}());
 };
 

@@ -18,13 +18,13 @@ namespace vc
 		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 	}
 
-	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url)
+	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url) : device_name_(device_name)
 	{
 		std::cout << "Entering VideoCaptureDevice constructor" << std::endl;
 
-		device_ = new Tango::DeviceProxy(device_name);
+		device_ = new Tango::DeviceProxy(device_name_);
 
-		std::cout << "Connected to device " << device_name << std::endl;
+		std::cout << "Connected to device " << device_name_ << std::endl;
 
 		cam_mode_ = get_device_camera_mode_();
 
@@ -84,6 +84,11 @@ namespace vc
 	Tango::DeviceProxy& VideoCaptureDevice::device()
 	{
 		return *device_;
+	}
+
+	std::string VideoCaptureDevice::deviceName() const
+	{
+		return device_name_;
 	}
 
 	cv::Mat VideoCaptureDevice::image()

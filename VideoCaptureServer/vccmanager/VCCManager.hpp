@@ -17,9 +17,9 @@ public:
 
 	// playlists_path - path of folder that stores all the playlists from VideoCapture clients
 	// connection_heartbeat_timeout_ms - number of milliseconds that has to be passed without heartbeat from web client to shut down VCClientThread
-	VCCManager(const char* playlists_path, time_t connection_heartbeat_timeout_ms);
+	VCCManager(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
 
-	static std::shared_ptr<VCCManager> createShared(const char* playlists_path, time_t connection_heartbeat_timeout_ms);
+	static std::shared_ptr<VCCManager> createShared(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
 
 	// Remove '/' symbols from Tango device name
 	static std::string formatDeviceName(const std::string& device_name);
@@ -36,6 +36,7 @@ private:
 	void update() override;
 
 	std::string playlists_path_;
+	std::string playlist_base_url_;
 
 	struct DeviceNode
 	{
