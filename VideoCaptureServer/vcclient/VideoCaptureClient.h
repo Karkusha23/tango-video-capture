@@ -32,11 +32,18 @@ namespace vc
 	{
 	public:
 
+		enum class UIDisplayType 
+		{
+			None, // Encoding raw frames without any UI
+			Regular, // Adding bounding rects and mass centers for contours, other info about contours is displayed above said rects
+			SidePanel // Same as regular, but frames are extended by width and have side panel on which additional info is displayed
+		};
+
 		// device_name - name of device in Tango system
 		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
 		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
 		// to_show_ui - to show ui on host pc
-		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url);
+		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, UIDisplayType display_type);
 		~VideoCaptureDevice();
 
 		Tango::DeviceProxy& device();
@@ -85,6 +92,11 @@ namespace vc
 		int width_;
 		int height_;
 
+		int out_width_;
+		int out_height_;
+
+		const UIDisplayType display_type_;
+
 		// Contour threshold value that is changing from opencv user trackbar
 		int threshold_;
 
@@ -97,14 +109,10 @@ namespace vc
 		// Previous value of threshold that updates on update_ruler_()
 		Ruler ruler_prev_;
 
-		// Ruler length that is corresponding to UI trackbar
-		int ruler_length_;
-
-		// Flipflop for setting ruler point with mouse
-		bool mouse_flipflop_;
-
 		// Get device camera mode from database property
 		CameraMode get_device_camera_mode_();
+
+		void put_ui_on_frame_();
 
 		// Write threshold value from user trackbar to device attribute
 		void update_threshold_value_();

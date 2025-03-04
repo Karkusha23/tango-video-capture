@@ -18,7 +18,8 @@ namespace vc
 		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 	}
 
-	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url) : device_name_(device_name)
+	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, UIDisplayType display_type) :
+		device_name_(device_name), display_type_(display_type)
 	{
 		std::cout << "Entering VideoCaptureDevice constructor" << std::endl;
 
@@ -36,31 +37,24 @@ namespace vc
 		threshold_ = threshold_prev_ = device_->read_attribute("Threshold").UShortSeq[0];
 
 		ruler_ = ruler_prev_ = *reinterpret_cast<vc::Ruler*>(device_->read_attribute("Ruler").EncodedSeq[0].encoded_data.NP_data());
-		ruler_length_ = (int)ruler_.length;
 
 		width_ = get_device_int_property("Width");
 		height_ = get_device_int_property("Height");
 
-		mouse_flipflop_ = false;
-
-		/*if (to_show_ui_)
+		if (display_type_ == UIDisplayType::SidePanel)
 		{
-			cv::namedWindow(IMAGE_WINDOW_NAME);
-			cv::setMouseCallback(IMAGE_WINDOW_NAME, image_mouse_callback, this);
+			out_height_ = height_ >= 480 ? height_ : 480;
+			out_width_ = width_ + 200;
+		}
+		else
+		{
+			out_width_ = width_;
+			out_height_ = height_;
+		}
 
-			cv::namedWindow(IMAGE_PARAMETERS_WINDOW_NAME);
-			cv::resizeWindow(IMAGE_PARAMETERS_WINDOW_NAME, 600, 300);
-			cv::createTrackbar("Threshold", IMAGE_PARAMETERS_WINDOW_NAME, &threshold_, 100);
-			cv::createTrackbar("Ruler Start X", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.start.x, width_);
-			cv::createTrackbar("Ruler Start Y", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.start.y, height_);
-			cv::createTrackbar("Ruler End   X", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.end.x, width_);
-			cv::createTrackbar("Ruler End   Y", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_.end.y, height_);
-			cv::createTrackbar("Ruler length", IMAGE_PARAMETERS_WINDOW_NAME, &ruler_length_, 1000);
-		}*/
+		image_ = cv::Mat(out_height_, out_width_, CV_8UC3);
 
-		image_ = cv::Mat(height_, width_, CV_8UC3);
-
-		video_encoder_ = new VideoEncoderThread(playlist_path, playlist_url, width_, height_);
+		video_encoder_ = new VideoEncoderThread(playlist_path, playlist_url, out_width_, out_height_);
 
 		std::cout << "VideoCaptureClient initialisation complete" << std::endl;
 	}
@@ -68,12 +62,6 @@ namespace vc
 	VideoCaptureDevice::~VideoCaptureDevice()
 	{
 		std::cout << "Entering VideoCaptureClient destructor" << std::endl;
-
-		/*if (to_show_ui_)
-		{
-			cv::destroyWindow(IMAGE_WINDOW_NAME);
-			cv::destroyWindow(IMAGE_PARAMETERS_WINDOW_NAME);
-		}*/
 
 		delete device_;
 		delete video_encoder_;
@@ -167,13 +155,28 @@ namespace vc
 		jpg_.resize(jpegAttr.EncodedSeq[0].encoded_data.length() / sizeof(unsigned char));
 		std::memcpy(jpg_.data(), jpegAttr.EncodedSeq[0].encoded_data.NP_data(), jpegAttr.EncodedSeq[0].encoded_data.length() * sizeof(unsigned char));
 
-		image_ = cv::imdecode(jpg_, cv::IMREAD_ANYCOLOR);
+		image_ = cv::imdecode(jpg_, cv::IMREAD_COLOR);
+		cv::Mat image_conv;
+		cv::cvtColor(image_, image_conv, cv::COLOR_BGR2RGB);
+		image_ = image_conv;
 
-		if (cam_mode_ == CameraMode::Grayscale)
+		put_ui_on_frame_();
+
+		video_encoder_->writeFrame(image_);
+	}
+
+	void VideoCaptureDevice::put_ui_on_frame_()
+	{
+		if (display_type_ == UIDisplayType::None)
 		{
-			cv::Mat image_conv;
-			cv::cvtColor(image_, image_conv, cv::COLOR_GRAY2RGB);
-			image_ = image_conv;
+			return;
+		}
+
+		if (display_type_ == UIDisplayType::SidePanel)
+		{
+			cv::Mat image_pad;
+			cv::copyMakeBorder(image_, image_pad, 0, out_height_ - height_, 0, out_width_ - width_, cv::BORDER_CONSTANT);
+			image_ = image_pad;
 		}
 
 		Tango::DeviceAttribute contourAttr = device_->read_attribute("ContourInfo");
@@ -187,37 +190,41 @@ namespace vc
 
 			if (contours[i].area_abs > 0.0)
 			{
-				text += "Area:" + std::to_string(contours[i].area_abs);
+				text += "Area:" + std::to_string((int)contours[i].area_abs);
 			}
 			else
 			{
-				text += "Area(px):" + std::to_string(contours[i].area_rel);
+				text += "Area(px):" + std::to_string((int)contours[i].area_rel);
 			}
 
 			text += "; ";
 
 			if (contours[i].diameter_abs > 0.0)
 			{
-				text += "Diameter:" + std::to_string(contours[i].diameter_abs);
+				text += "Diameter:" + std::to_string((int)contours[i].diameter_abs);
 			}
 			else
 			{
-				text += "Diameter(px):" + std::to_string(contours[i].diameter_rel);
+				text += "Diameter(px):" + std::to_string((int)contours[i].diameter_rel);
 			}
 
 			cv::rectangle(image_, contours[i].bound_rect.tl(), contours[i].bound_rect.br(), TEXT_COLOR, 5);
 			cv::circle(image_, contours[i].center_mass, 3, TEXT_COLOR, -1);
-			cv::putText(image_, text, { contours[i].bound_rect.x, contours[i].bound_rect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
+
+			switch (display_type_)
+			{
+			case UIDisplayType::Regular:
+				cv::putText(image_, text, { contours[i].bound_rect.x, contours[i].bound_rect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
+				break;
+			case UIDisplayType::SidePanel:
+				cv::putText(image_, text, { width_ + 2, 10 * (i + 1)}, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
+				break;
+			default:
+				break;
+			}
 		}
 
 		cv::line(image_, ruler_.start, ruler_.end, RULER_COLOR, 2);
-
-		video_encoder_->writeFrame(image_);
-
-		/*if (to_show_ui_)
-		{
-			cv::imshow(IMAGE_WINDOW_NAME, image_);
-		}*/
 	}
 
 	void VideoCaptureDevice::update()
@@ -243,10 +250,6 @@ namespace vc
 	void VideoCaptureDevice::set_ruler_point_to(const cv::Point& point)
 	{
 		cv::Point& ruler_point = distance(point, ruler_.start) < distance(point, ruler_.end) ? ruler_.start : ruler_.end;
-
-		//cv::Point& ruler_point = mouse_flipflop_ ? ruler_.start : ruler_.end;
-		//mouse_flipflop_ = !mouse_flipflop_;
-
 		ruler_point = point;
 	}
 
@@ -292,8 +295,6 @@ namespace vc
 
 	void VideoCaptureDevice::update_ruler_()
 	{
-		ruler_.length = (double)ruler_length_;
-
 		if (ruler_ == ruler_prev_)
 		{
 			return;
@@ -310,12 +311,4 @@ namespace vc
 		Tango::DeviceAttribute ruler_write(ruler_str, ruler_encoded);
 		device_->write_attribute(ruler_write);
 	}
-
-	/*void image_mouse_callback(int event, int x, int y, int flags, void* param)
-	{
-		if (event & cv::EVENT_LBUTTONDOWN)
-		{
-			reinterpret_cast<VideoCaptureDevice*>(param)->set_ruler_point_to(cv::Point(x, y));
-		}
-	}*/
 }

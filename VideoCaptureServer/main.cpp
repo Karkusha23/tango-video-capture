@@ -9,6 +9,8 @@
 
 int main()
 {
+	av_log_set_level(AV_LOG_ERROR);
+
 	oatpp::base::Environment::init();
 
 	AppComponent components;
