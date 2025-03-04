@@ -4,6 +4,7 @@
 #include <string>
 #include <atomic>
 #include <queue>
+#include <algorithm>
 
 #include <tango.h>
 #include "VideoCaptureDS.h"

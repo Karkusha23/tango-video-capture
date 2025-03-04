@@ -211,6 +211,8 @@ namespace VideoCaptureDS_ns
 			contourInfo->push_back(con_info);
 		}
 
+		std::sort(contourInfo->begin(), contourInfo->end(), [](const vc::ContourInfo& first, const vc::ContourInfo& second) -> bool { return first.area_rel > second.area_rel; });
+
 		DEBUG_STREAM << "CamCaptureThread: Contours found: " << contours_.size() << "; valid ones: " << contourInfo->size() << std::endl;
 	}
 
