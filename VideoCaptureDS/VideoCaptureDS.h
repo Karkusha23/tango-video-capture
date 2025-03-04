@@ -98,6 +98,8 @@ public:
 	Tango::DevUShort	jpegQuality;
 	//	Threshold:	Threshold of contour finding algorithm
 	Tango::DevUShort	threshold;
+	//	MinContourArea:	
+	Tango::DevDouble	minContourArea;
 
 //	Attribute data members
 public:
@@ -105,6 +107,7 @@ public:
 	Tango::DevEncoded	*attr_ContourInfo_read;
 	Tango::DevUShort	*attr_Threshold_read;
 	Tango::DevEncoded	*attr_Ruler_read;
+	Tango::DevDouble	*attr_MinContourArea_read;
 	Tango::DevUChar	*attr_Frame_read;
 
 //	Constructors and destructors
@@ -212,6 +215,16 @@ public:
 	virtual void read_Ruler(Tango::Attribute &attr);
 	virtual void write_Ruler(Tango::WAttribute &attr);
 	virtual bool is_Ruler_allowed(Tango::AttReqType type);
+/**
+ *	Attribute MinContourArea related methods
+ *	Description: 
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_MinContourArea(Tango::Attribute &attr);
+	virtual void write_MinContourArea(Tango::WAttribute &attr);
+	virtual bool is_MinContourArea_allowed(Tango::AttReqType type);
 /**
  *	Attribute Frame related methods
  *	Description: 

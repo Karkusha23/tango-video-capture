@@ -29,76 +29,7 @@ namespace VideoCaptureDS_ns
 
 		while (!local_exit_)
 		{
-			CaptureQuery query;
-
-			{
-				omni_mutex_lock lock(queue_mutex_);
-
-				if (queue_.empty())
-				{
-					continue;
-				}
-
-				DEBUG_STREAM << "CamCaptureThread: Getting query from queue. Total queries: " << queue_.size() << std::endl;
-
-				query = queue_.front();
-				queue_.pop();
-			}
-
-			{
-				omni_mutex_lock lock(cam_mutex_);
-
-				DEBUG_STREAM << "CamCaptureThread: Reading image from webcam" << std::endl;
-
-				if (is_failed_)
-				{
-					*query.image = image_no_image->clone();
-				}
-				else
-				{
-					cam_->read(*query.image);
-
-					if (query.image->empty())
-					{
-						*query.image = image_no_image->clone();
-					}
-				}
-			}
-
-			DEBUG_STREAM << "CamCaptureThread: Processing image" << std::endl;
-
-			cv::Mat image_converted;
-			cv::Mat image_gray;
-
-			cv::cvtColor(*query.image, image_gray, cv::COLOR_BGR2GRAY);
-
-			get_contours_(image_gray, query.contours, query.ruler, query.threshold);
-			
-			jpeg_params_[1] = query.jpegQuality;
-
-			switch (query.mode)
-			{
-			case vc::CameraMode::RGB:
-				cv::cvtColor(*query.image, image_converted, cv::COLOR_BGR2RGB);
-				cv::imencode(".jpg", image_converted, *query.jpeg, jpeg_params_);
-				*query.image = std::move(image_converted);
-				break;
-			case vc::CameraMode::BGR:
-				cv::imencode(".jpg", *query.image, *query.jpeg, jpeg_params_);
-				break;
-			case vc::CameraMode::Grayscale:
-				cv::imencode(".jpg", image_gray, *query.jpeg, jpeg_params_);
-				*query.image = std::move(image_gray);
-				break;
-			default:
-				break;
-			}
-
-			*query.status = true;
-
-			DEBUG_STREAM << "CamCaptureThread: End of capture" << std::endl;
-
-			// Sleep(100); // delay if needed
+			update_();
 		}
 
 		DEBUG_STREAM << "CamCaptureThread: Thread stopped!" << std::endl;
@@ -113,14 +44,13 @@ namespace VideoCaptureDS_ns
 		DEBUG_STREAM << "CamCaptureThread: Thread is stopping" << std::endl;
 	}
 
-	void CamCaptureThread::capture(cv::Mat* image, std::vector<unsigned char>* jpeg, std::vector<vc::ContourInfo>* contours, const vc::Ruler* ruler,
-								   vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status)
+	void CamCaptureThread::capture(const CaptureQuery& query)
 	{
 		omni_mutex_lock lock(queue_mutex_);
 
 		DEBUG_STREAM << "CamCaptureThread: Adding capture query to queue" << std::endl;
 
-		queue_.push({ image, jpeg, contours, ruler, mode, jpegQuality, threshold, status });
+		queue_.push(query);
 	}
 
 	bool CamCaptureThread::is_failed() const
@@ -161,7 +91,84 @@ namespace VideoCaptureDS_ns
 		cv::putText(*image_no_image, "No image", cv::Point(width / 2 - 50, height / 2), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(255, 255, 255));
 	}
 
-	void CamCaptureThread::get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, const vc::Ruler* ruler, int threshold)
+	void CamCaptureThread::update_()
+	{
+		CaptureQuery query;
+
+		{
+			omni_mutex_lock lock(queue_mutex_);
+
+			if (queue_.empty())
+			{
+				return;
+			}
+
+			DEBUG_STREAM << "CamCaptureThread: Getting query from queue. Total queries: " << queue_.size() << std::endl;
+
+			query = queue_.front();
+			queue_.pop();
+		}
+
+		DEBUG_STREAM << "CamCaptureThread: Reading image from webcam" << std::endl;
+
+		if (is_failed_)
+		{
+			*query.image = image_no_image->clone();
+		}
+		else
+		{
+			{
+				omni_mutex_lock lock(cam_mutex_);
+				cam_->read(*query.image);
+			}
+
+			if (query.image->empty())
+			{
+				*query.image = image_no_image->clone();
+			}
+		}
+
+
+		process_query_(query);
+
+		DEBUG_STREAM << "CamCaptureThread: End of capture" << std::endl;
+	}
+
+	void CamCaptureThread::process_query_(const CaptureQuery& query)
+	{
+		DEBUG_STREAM << "CamCaptureThread: Processing image" << std::endl;
+
+		cv::Mat image_converted;
+		cv::Mat image_gray;
+
+		cv::cvtColor(*query.image, image_gray, cv::COLOR_BGR2GRAY);
+
+		get_contours_(image_gray, query.contours, query.ruler, query.threshold, query.minContourArea);
+
+		jpeg_params_[1] = query.jpegQuality;
+
+		switch (query.mode)
+		{
+		case vc::CameraMode::RGB:
+			cv::cvtColor(*query.image, image_converted, cv::COLOR_BGR2RGB);
+			cv::imencode(".jpg", image_converted, *query.jpeg, jpeg_params_);
+			*query.image = std::move(image_converted);
+			break;
+		case vc::CameraMode::BGR:
+			cv::imencode(".jpg", *query.image, *query.jpeg, jpeg_params_);
+			break;
+		case vc::CameraMode::Grayscale:
+			cv::imencode(".jpg", image_gray, *query.jpeg, jpeg_params_);
+			*query.image = std::move(image_gray);
+			break;
+		default:
+			break;
+		}
+
+		*query.status = true;
+	}
+
+	void CamCaptureThread::get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, const vc::Ruler* ruler, int threshold, double minContourArea)
 	{
 		DEBUG_STREAM << "CamCaptureThread: Getting contours" << std::endl;
 
@@ -179,7 +186,7 @@ namespace VideoCaptureDS_ns
 		{
 			int area_rel = cv::contourArea(contour);
 
-			if (area_rel < 1000)
+			if (area_rel < minContourArea)
 			{
 				continue;
 			}

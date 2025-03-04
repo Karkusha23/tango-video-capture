@@ -126,6 +126,26 @@ bool VideoCaptureDS::is_Ruler_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 //--------------------------------------------------------
 /**
+ *	Method      : VideoCaptureDS::is_MinContourArea_allowed()
+ *	Description : Execution allowed for MinContourArea attribute
+ */
+//--------------------------------------------------------
+bool VideoCaptureDS::is_MinContourArea_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+	//	Not any excluded states for MinContourArea attribute in Write access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::MinContourAreaStateAllowed_WRITE) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::MinContourAreaStateAllowed_WRITE
+
+	//	Not any excluded states for MinContourArea attribute in read access.
+	/*----- PROTECTED REGION ID(VideoCaptureDS::MinContourAreaStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::MinContourAreaStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : VideoCaptureDS::is_Frame_allowed()
  *	Description : Execution allowed for Frame attribute
  */

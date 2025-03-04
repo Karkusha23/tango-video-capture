@@ -347,6 +347,20 @@ void VideoCaptureDSClass::set_default_property()
 	}
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "MinContourArea";
+	prop_desc = "";
+	prop_def  = "1000";
+	vect_data.clear();
+	vect_data.push_back("1000");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
 }
 
 //--------------------------------------------------------
@@ -647,6 +661,30 @@ void VideoCaptureDSClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	ruler->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	att_list.push_back(ruler);
+
+	//	Attribute : MinContourArea
+	MinContourAreaAttrib	*mincontourarea = new MinContourAreaAttrib();
+	Tango::UserDefaultAttrProp	mincontourarea_prop;
+	//	description	not set for MinContourArea
+	//	label	not set for MinContourArea
+	//	unit	not set for MinContourArea
+	//	standard_unit	not set for MinContourArea
+	//	display_unit	not set for MinContourArea
+	//	format	not set for MinContourArea
+	//	max_value	not set for MinContourArea
+	//	min_value	not set for MinContourArea
+	//	max_alarm	not set for MinContourArea
+	//	min_alarm	not set for MinContourArea
+	//	max_warning	not set for MinContourArea
+	//	min_warning	not set for MinContourArea
+	//	delta_t	not set for MinContourArea
+	//	delta_val	not set for MinContourArea
+	
+	mincontourarea->set_default_properties(mincontourarea_prop);
+	//	Not Polled
+	mincontourarea->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(mincontourarea);
 
 	//	Attribute : Frame
 	FrameAttrib	*frame = new FrameAttrib();

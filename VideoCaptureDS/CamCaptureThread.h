@@ -28,8 +28,21 @@ namespace VideoCaptureDS_ns
 
 		void* run_undetached(void*);
 		void stop();
-		void capture(cv::Mat* image, std::vector<unsigned char>* jpeg, std::vector<vc::ContourInfo>* contours, const vc::Ruler* ruler,
-					 vc::CameraMode mode, double jpegQuality, int threshold, std::atomic_bool* status);
+
+		struct CaptureQuery
+		{
+			cv::Mat* image;
+			std::vector<unsigned char>* jpeg;
+			std::vector<vc::ContourInfo>* contours;
+			const vc::Ruler* ruler;
+			vc::CameraMode mode;
+			double jpegQuality;
+			int threshold;
+			double minContourArea;
+			std::atomic_bool* status;
+		};
+
+		void capture(const CaptureQuery& query);
 
 		bool is_failed() const;
 
@@ -37,7 +50,10 @@ namespace VideoCaptureDS_ns
 
 	private:
 
-		void get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, const vc::Ruler* ruler, int threshold);
+		void update_();
+		void process_query_(const CaptureQuery& query);
+
+		void get_contours_(const cv::Mat& image_gray, std::vector<vc::ContourInfo>* contourInfo, const vc::Ruler* ruler, int threshold, double minContourArea);
 
 		cv::Point get_center_of_mass_(const std::vector<cv::Point>& contour);
 
@@ -55,18 +71,6 @@ namespace VideoCaptureDS_ns
 
 		int width_;
 		int height_;
-
-		struct CaptureQuery
-		{
-			cv::Mat* image;
-			std::vector<unsigned char>* jpeg;
-			std::vector<vc::ContourInfo>* contours;
-			const vc::Ruler* ruler;
-			vc::CameraMode mode;
-			double jpegQuality;
-			int threshold;
-			std::atomic_bool* status;
-		};
 
 		std::queue<CaptureQuery> queue_;
 		omni_mutex queue_mutex_;

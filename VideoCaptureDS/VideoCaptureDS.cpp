@@ -65,11 +65,12 @@ static const char *RcsId = "$Id:  $";
 //================================================================
 //  Attributes managed are:
 //================================================================
-//  Jpeg         |  Tango::DevEncoded	Scalar
-//  ContourInfo  |  Tango::DevEncoded	Scalar
-//  Threshold    |  Tango::DevUShort	Scalar
-//  Ruler        |  Tango::DevEncoded	Scalar
-//  Frame        |  Tango::DevUChar	Image  ( max = 3840 x 720)
+//  Jpeg            |  Tango::DevEncoded	Scalar
+//  ContourInfo     |  Tango::DevEncoded	Scalar
+//  Threshold       |  Tango::DevUShort	Scalar
+//  Ruler           |  Tango::DevEncoded	Scalar
+//  MinContourArea  |  Tango::DevDouble	Scalar
+//  Frame           |  Tango::DevUChar	Image  ( max = 3840 x 720)
 //================================================================
 
 namespace VideoCaptureDS_ns
@@ -135,6 +136,7 @@ void VideoCaptureDS::delete_device()
 	delete[] attr_ContourInfo_read;
 	delete[] attr_Threshold_read;
 	delete[] attr_Ruler_read;
+	delete[] attr_MinContourArea_read;
 	delete[] attr_Frame_read;
 }
 
@@ -161,6 +163,7 @@ void VideoCaptureDS::init_device()
 	attr_ContourInfo_read = new Tango::DevEncoded[1];
 	attr_Threshold_read = new Tango::DevUShort[1];
 	attr_Ruler_read = new Tango::DevEncoded[1];
+	attr_MinContourArea_read = new Tango::DevDouble[1];
 	attr_Frame_read = new Tango::DevUChar[3840*720];
 	/*----- PROTECTED REGION ID(VideoCaptureDS::init_device) ENABLED START -----*/
 
@@ -171,6 +174,7 @@ void VideoCaptureDS::init_device()
 	update_cv_cam();
 
 	*attr_Threshold_read = threshold;
+	*attr_MinContourArea_read = minContourArea;
 
 	attr_Ruler_read->encoded_data.length(sizeof(vc::Ruler));
 	ruler = reinterpret_cast<vc::Ruler*>(attr_Ruler_read->encoded_data.NP_data());
@@ -203,6 +207,7 @@ void VideoCaptureDS::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("Width"));
 	dev_prop.push_back(Tango::DbDatum("JpegQuality"));
 	dev_prop.push_back(Tango::DbDatum("Threshold"));
+	dev_prop.push_back(Tango::DbDatum("MinContourArea"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -282,6 +287,17 @@ void VideoCaptureDS::get_device_property()
 		}
 		//	And try to extract Threshold value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  threshold;
+
+		//	Try to initialize MinContourArea from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  minContourArea;
+		else {
+			//	Try to initialize MinContourArea from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  minContourArea;
+		}
+		//	And try to extract MinContourArea value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  minContourArea;
 
 	}
 
@@ -455,6 +471,45 @@ void VideoCaptureDS::write_Ruler(Tango::WAttribute &attr)
 }
 //--------------------------------------------------------
 /**
+ *	Read attribute MinContourArea related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::read_MinContourArea(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::read_MinContourArea(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(VideoCaptureDS::read_MinContourArea) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_MinContourArea_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::read_MinContourArea
+}
+//--------------------------------------------------------
+/**
+ *	Write attribute MinContourArea related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void VideoCaptureDS::write_MinContourArea(Tango::WAttribute &attr)
+{
+	DEBUG_STREAM << "VideoCaptureDS::write_MinContourArea(Tango::WAttribute &attr) entering... " << endl;
+	//	Retrieve write value
+	Tango::DevDouble	w_val;
+	attr.get_write_value(w_val);
+	/*----- PROTECTED REGION ID(VideoCaptureDS::write_MinContourArea) ENABLED START -----*/
+	
+	*attr_MinContourArea_read = w_val;
+
+	/*----- PROTECTED REGION END -----*/	//	VideoCaptureDS::write_MinContourArea
+}
+//--------------------------------------------------------
+/**
  *	Read attribute Frame related method
  *	Description: 
  *
@@ -512,7 +567,7 @@ void VideoCaptureDS::capture()
 
 	DEBUG_STREAM << "VideoCaptureDS: Passing capture query to thread" << std::endl;
 
-	camThread->capture(&image_to_show, &jpeg, &contours, ruler, cam_mode, std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, &status);
+	camThread->capture({ &image_to_show, &jpeg, &contours, ruler, cam_mode, (double)std::max(0, std::min(100, (int)jpegQuality)), *attr_Threshold_read, *attr_MinContourArea_read, &status });
 
 	while (!status)
 	{

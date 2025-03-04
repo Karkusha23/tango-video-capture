@@ -115,6 +115,21 @@ public:
 		{return (static_cast<VideoCaptureDS *>(dev))->is_Ruler_allowed(ty);}
 };
 
+//	Attribute MinContourArea class definition
+class MinContourAreaAttrib: public Tango::Attr
+{
+public:
+	MinContourAreaAttrib():Attr("MinContourArea",
+			Tango::DEV_DOUBLE, Tango::READ_WRITE) {};
+	~MinContourAreaAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->read_MinContourArea(att);}
+	virtual void write(Tango::DeviceImpl *dev,Tango::WAttribute &att)
+		{(static_cast<VideoCaptureDS *>(dev))->write_MinContourArea(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<VideoCaptureDS *>(dev))->is_MinContourArea_allowed(ty);}
+};
+
 //	Attribute Frame class definition
 class FrameAttrib: public Tango::ImageAttr
 {
