@@ -63,11 +63,11 @@ namespace vc
 		// Called once in every update_time milliseconds
 		void update();
 
-		class Params
+		struct Params
 		{
-		public:
 			Ruler ruler;
 			int threshold;
+			double minContourArea;
 		};
 
 		Params get_params();
@@ -97,17 +97,8 @@ namespace vc
 
 		const UIDisplayType display_type_;
 
-		// Contour threshold value that is changing from opencv user trackbar
-		int threshold_;
-
-		// Previous value of threshold that updates on update_threshold_value_()
-		int threshold_prev_;
-
-		// Ruler that is changing from opencv UI
-		Ruler ruler_;
-
-		// Previous value of threshold that updates on update_ruler_()
-		Ruler ruler_prev_;
+		Params params_;
+		Params params_prev_;
 
 		// Get device camera mode from database property
 		CameraMode get_device_camera_mode_();
@@ -116,6 +107,9 @@ namespace vc
 
 		// Write threshold value from user trackbar to device attribute
 		void update_threshold_value_();
+
+		// Write minimal contour area value from user trackbar to device attribute
+		void update_MinContourArea_value_();
 
 		// Write ruler from UI to device attributes
 		void update_ruler_();

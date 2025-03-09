@@ -47,6 +47,8 @@ public:
 	{
 		auto serializerConfig = oatpp::parser::json::mapping::Serializer::Config::createShared();
 		auto deserializerConfig = oatpp::parser::json::mapping::Deserializer::Config::createShared();
+		serializerConfig->enabledInterpretations = { "my-types" };
+		deserializerConfig->enabledInterpretations = { "my-types" };
 		deserializerConfig->allowUnknownFields = false;
 		return oatpp::parser::json::mapping::ObjectMapper::createShared(serializerConfig, deserializerConfig);
 	}());

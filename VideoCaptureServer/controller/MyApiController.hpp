@@ -8,7 +8,7 @@
 
 #include "../filemanager/StaticFileManager.hpp"
 #include "../vccmanager/VCCManager.hpp"
-#include "../dtos/VCParams.hpp"
+#include "../dtos/VCParamsInter.hpp"
 
 // Api controller for Oat++ server that defines processable urls, corresponding actions and responses
 
@@ -97,7 +97,7 @@ public:
 
 			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Can not connect to device");
 
-			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(vcparams_to_dto(params))->c_str()));
+			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(VCParamsDTOInter(params))->c_str()));
 		}
 	};
 
@@ -134,18 +134,15 @@ public:
 
 		Action act() override
 		{
-			return request->readBodyToDtoAsync<oatpp::Object<VCParamsDTO>>(controller->getDefaultObjectMapper()).callbackTo(&PostDeviceParams::returnResponse);
-		}
-
-		Action returnResponse(const oatpp::Object<VCParamsDTO>& body)
-		{
 			std::string domain = request->getPathVariable("domain");
 			std::string group = request->getPathVariable("group");
 			std::string instance = request->getPathVariable("instance");
 
 			std::string device_name = domain + "/" + group + "/" + instance;
 
-			bool res = controller->vccManager->setParams(device_name, vcparams_from_dto(body));
+			auto params = controller->apiObjectMapper->readFromString<VCParamsDTOInter>(request->readBodyToString());
+
+			bool res = controller->vccManager->setParams(device_name, params);
 
 			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to device");
 

@@ -34,9 +34,10 @@ namespace vc
 			throw std::exception("Invalid camera mode");
 		}
 
-		threshold_ = threshold_prev_ = device_->read_attribute("Threshold").UShortSeq[0];
+		params_.threshold = params_prev_.threshold = device_->read_attribute("Threshold").UShortSeq[0];
+		params_.minContourArea = params_prev_.minContourArea = device_->read_attribute("MinContourArea").DoubleSeq[0];
 
-		ruler_ = ruler_prev_ = *reinterpret_cast<vc::Ruler*>(device_->read_attribute("Ruler").EncodedSeq[0].encoded_data.NP_data());
+		params_.ruler = params_prev_.ruler = *reinterpret_cast<vc::Ruler*>(device_->read_attribute("Ruler").EncodedSeq[0].encoded_data.NP_data());
 
 		width_ = get_device_int_property("Width");
 		height_ = get_device_int_property("Height");
@@ -224,32 +225,32 @@ namespace vc
 			}
 		}
 
-		cv::line(image_, ruler_.start, ruler_.end, RULER_COLOR, 2);
+		cv::line(image_, params_.ruler.start, params_.ruler.end, RULER_COLOR, 2);
 	}
 
 	void VideoCaptureDevice::update()
 	{
 		std::lock_guard<std::mutex> lock(params_lock_);
 		update_threshold_value_();
+		update_MinContourArea_value_();
 		update_ruler_();
 	}
 
 	VideoCaptureDevice::Params VideoCaptureDevice::get_params()
 	{
 		std::lock_guard<std::mutex> lock(params_lock_);
-		return { ruler_, threshold_ };
+		return params_;
 	}
 
 	void VideoCaptureDevice::set_params(const VideoCaptureDevice::Params& params)
 	{
 		std::lock_guard<std::mutex> lock(params_lock_);
-		ruler_ = params.ruler;
-		threshold_ = params.threshold;
+		params_ = params;
 	}
 
 	void VideoCaptureDevice::set_ruler_point_to(const cv::Point& point)
 	{
-		cv::Point& ruler_point = distance(point, ruler_.start) < distance(point, ruler_.end) ? ruler_.start : ruler_.end;
+		cv::Point& ruler_point = distance(point, params_.ruler.start) < distance(point, params_.ruler.end) ? params_.ruler.start : params_.ruler.end;
 		ruler_point = point;
 	}
 
@@ -280,31 +281,46 @@ namespace vc
 
 	void VideoCaptureDevice::update_threshold_value_()
 	{
-		if (threshold_ == threshold_prev_)
+		if (params_.threshold == params_prev_.threshold)
 		{
 			return;
 		}
 
-		threshold_prev_ = threshold_;
+		params_prev_.threshold = params_.threshold;
 
 		std::string threshold_str = "Threshold";
 
-		Tango::DeviceAttribute threshold_write(threshold_str, Tango::DevUShort(std::max(0, std::min(100, threshold_))));
+		Tango::DeviceAttribute threshold_write(threshold_str, Tango::DevUShort(std::max(0, std::min(100, params_.threshold))));
 		device_->write_attribute(threshold_write);
+	}
+
+	void VideoCaptureDevice::update_MinContourArea_value_()
+	{
+		if (params_.minContourArea == params_prev_.minContourArea)
+		{
+			return;
+		}
+
+		params_prev_.minContourArea = params_.minContourArea;
+
+		std::string minContourArea_str = "MinContourArea";
+
+		Tango::DeviceAttribute minContourArea_write(minContourArea_str, Tango::DevDouble(params_.minContourArea));
+		device_->write_attribute(minContourArea_write);
 	}
 
 	void VideoCaptureDevice::update_ruler_()
 	{
-		if (ruler_ == ruler_prev_)
+		if (params_.ruler == params_prev_.ruler)
 		{
 			return;
 		}
 
-		ruler_prev_ = ruler_;
+		params_prev_.ruler = params_.ruler;
 
 		Tango::DevEncoded ruler_encoded;
 		ruler_encoded.encoded_data.length(sizeof(Ruler));
-		std::memcpy(ruler_encoded.encoded_data.NP_data(), &ruler_, sizeof(Ruler));
+		std::memcpy(ruler_encoded.encoded_data.NP_data(), &params_.ruler, sizeof(Ruler));
 
 		std::string ruler_str = "Ruler";
 
