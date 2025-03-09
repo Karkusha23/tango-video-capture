@@ -177,7 +177,7 @@ public:
 			oatpp::String filename = request->getPathTail();
 			OATPP_ASSERT_HTTP(filename, Status::CODE_400, "Filename is empty");
 			auto range = request->getHeader(Header::RANGE);
-			return _return(controller->getStaticFileResponse(filename, range));
+			return _return(controller->getStaticFileResponse(filename, range, true));
 		}
 	};
 
