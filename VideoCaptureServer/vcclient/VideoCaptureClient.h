@@ -43,7 +43,7 @@ namespace vc
 		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
 		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
 		// to_show_ui - to show ui on host pc
-		VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, UIDisplayType display_type);
+		VideoCaptureDevice(const std::string& device_name, const std::string& playlist_path, const std::string& playlist_url, UIDisplayType display_type);
 		~VideoCaptureDevice();
 
 		Tango::DeviceProxy& device();
@@ -54,6 +54,9 @@ namespace vc
 
 		int cam_width() const;
 		int cam_height() const;
+
+		int out_width() const;
+		int out_height() const;
 
 		void print_device_info(std::ostream& out);
 		int get_device_int_property(const std::string& name);
@@ -117,9 +120,9 @@ namespace vc
 
 	class JpegCallBack : public Tango::CallBack
 	{
-		VideoCaptureDevice* dev_;
+		std::shared_ptr<VideoCaptureDevice> dev_;
 	public:
-		JpegCallBack(VideoCaptureDevice* dev) : Tango::CallBack(), dev_(dev) {}
+		JpegCallBack(const std::shared_ptr<VideoCaptureDevice>& dev) : Tango::CallBack(), dev_(dev) {}
 		void push_event(Tango::EventData* event_data) override { dev_->event_on_Jpeg_change(event_data); }
 	};
 

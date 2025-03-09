@@ -61,3 +61,12 @@ std::shared_ptr<MyApiController::OutgoingResponse> MyApiController::getRangeResp
 
 	return response;
 }
+
+std::string MyApiController::getDeviceName(const std::shared_ptr<oatpp::web::protocol::http::incoming::Request>& request) const
+{
+	std::string domain = request->getPathVariable("domain");
+	std::string group = request->getPathVariable("group");
+	std::string instance = request->getPathVariable("instance");
+
+	return domain + "/" + group + "/" + instance;
+}

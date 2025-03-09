@@ -20,8 +20,8 @@ namespace dto
 	{
 		DTO_INIT(Ruler, DTO);
 
-		DTO_FIELD(Object<Point>, start);
-		DTO_FIELD(Object<Point>, end);
+		DTO_FIELD(Object<dto::Point>, start);
+		DTO_FIELD(Object<dto::Point>, end);
 		DTO_FIELD(Float64, length);
 	};
 
@@ -29,7 +29,7 @@ namespace dto
 	{
 		DTO_INIT(VCParams, DTO);
 
-		DTO_FIELD(Object<Ruler>, ruler);
+		DTO_FIELD(Object<dto::Ruler>, ruler);
 		DTO_FIELD(Int32, threshold);
 		DTO_FIELD(Float64, minContourArea);
 	};

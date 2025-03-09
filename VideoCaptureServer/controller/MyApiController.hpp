@@ -36,6 +36,8 @@ private:
 	std::shared_ptr<OutgoingResponse> getFullFileResponse(const oatpp::String& file) const;
 	std::shared_ptr<OutgoingResponse> getRangeResponse(const oatpp::String& rangeStr, const oatpp::String& file) const;
 
+	std::string getDeviceName(const std::shared_ptr<oatpp::web::protocol::http::incoming::Request>& request) const;
+
 public:
 
 #include OATPP_CODEGEN_BEGIN(ApiController)
@@ -63,17 +65,16 @@ public:
 
 		Action act() override
 		{
-			std::string domain = request->getPathVariable("domain");
-			std::string group = request->getPathVariable("group");
-			std::string instance = request->getPathVariable("instance");
+			std::string device_name = controller->getDeviceName(request);
 
-			std::string device_name = domain + "/" + group + "/" + instance;
+			auto vc_device = controller->vccManager->connectDevice(device_name);
 
-			bool res = controller->vccManager->connectDevice(device_name);
+			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Can not connect to device");
 
-			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Can not connect to device");
+			std::string width = std::to_string(vc_device->out_width());
+			std::string height = std::to_string(vc_device->out_height());
 
-			oatpp::String response = formatText(pageTemplate, device_name.c_str());
+			oatpp::String response = formatText(pageTemplate, width.c_str(), height.c_str(), device_name.c_str());
 
 			return _return(controller->createResponse(Status::CODE_200, response->c_str()));
 		}
@@ -85,19 +86,13 @@ public:
 
 		Action act() override
 		{
-			std::string domain = request->getPathVariable("domain");
-			std::string group = request->getPathVariable("group");
-			std::string instance = request->getPathVariable("instance");
+			std::string device_name = controller->getDeviceName(request);
 
-			std::string device_name = domain + "/" + group + "/" + instance;
+			std::shared_ptr<vc::VideoCaptureDevice> vc_device = controller->vccManager->device(device_name);
 
-			vc::VideoCaptureDevice::Params params;
+			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Can not connect to device");
 
-			bool res = controller->vccManager->getParams(device_name, params);
-
-			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Can not connect to device");
-
-			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(VCParamsDTOInter(params))->c_str()));
+			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(VCParamsDTOInter(vc_device->get_params()))->c_str()));
 		}
 	};
 
@@ -111,11 +106,7 @@ public:
 
 		Action act() override
 		{
-			std::string domain = request->getPathVariable("domain");
-			std::string group = request->getPathVariable("group");
-			std::string instance = request->getPathVariable("instance");
-
-			std::string device_name = domain + "/" + group + "/" + instance;
+			std::string device_name = controller->getDeviceName(request);
 
 			std::cout << "Heartbeat " << device_name << std::endl;
 
@@ -134,17 +125,14 @@ public:
 
 		Action act() override
 		{
-			std::string domain = request->getPathVariable("domain");
-			std::string group = request->getPathVariable("group");
-			std::string instance = request->getPathVariable("instance");
+			std::string device_name = controller->getDeviceName(request);
 
-			std::string device_name = domain + "/" + group + "/" + instance;
+			std::shared_ptr<vc::VideoCaptureDevice> vc_device = controller->vccManager->device(device_name);
+
+			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Not connected to device");
 
 			auto params = controller->apiObjectMapper->readFromString<VCParamsDTOInter>(request->readBodyToString());
-
-			bool res = controller->vccManager->setParams(device_name, params);
-
-			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to device");
+			vc_device->set_params(params);
 
 			return _return(controller->createResponse(Status::CODE_200, "OK"));
 		}

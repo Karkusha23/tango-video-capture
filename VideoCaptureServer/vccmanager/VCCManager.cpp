@@ -18,14 +18,14 @@ std::string VCCManager::formatDeviceName(const std::string& device_name)
 	return result;
 }
 
-bool VCCManager::connectDevice(const std::string& device_name)
+std::shared_ptr<vc::VideoCaptureDevice> VCCManager::connectDevice(const std::string& device_name)
 {
 	std::lock_guard<std::mutex> lock(map_lock_);
 
 	if (devices_.count(device_name))
 	{
 		devices_[device_name].heartbeat = true;
-		return true;
+		return devices_[device_name].device->vcDevice();
 	}
 
 	std::string name = formatDeviceName(device_name);
@@ -35,11 +35,11 @@ bool VCCManager::connectDevice(const std::string& device_name)
 
 	try
 	{
-		device = std::make_shared<vc::VCClientThread>(device_name.c_str(), (path + "\\playlist.m3u8").c_str(), url.c_str());
+		device = std::make_shared<vc::VCClientThread>(device_name, path, url);
 	}
 	catch (...)
 	{
-		return false;
+		return nullptr;
 	}
 
 	if (std::experimental::filesystem::exists(path))
@@ -50,7 +50,21 @@ bool VCCManager::connectDevice(const std::string& device_name)
 
 	devices_[device_name] = { device, true };
 
-	return true;
+	return device->vcDevice();
+}
+
+std::shared_ptr<vc::VideoCaptureDevice> VCCManager::device(const std::string& device_name)
+{
+	std::lock_guard<std::mutex> lock(map_lock_);
+
+	if (!devices_.count(device_name))
+	{
+		return nullptr;
+	}
+
+	devices_[device_name].heartbeat = true;
+
+	return devices_[device_name].device->vcDevice();
 }
 
 bool VCCManager::disconnectDevice(const std::string& device_name)
@@ -88,36 +102,6 @@ bool VCCManager::heartBeat(const std::string& device_name)
 		return false;
 	}
 
-	devices_[device_name].heartbeat = true;
-
-	return true;
-}
-
-bool VCCManager::getParams(const std::string& device_name, vc::VideoCaptureDevice::Params& params)
-{
-	std::lock_guard<std::mutex> lock(map_lock_);
-
-	if (!devices_.count(device_name))
-	{
-		return false;
-	}
-
-	params = devices_[device_name].device->vcDevice().get_params();
-	devices_[device_name].heartbeat = true;
-
-	return true;
-}
-
-bool VCCManager::setParams(const std::string& device_name, const vc::VideoCaptureDevice::Params& params)
-{
-	std::lock_guard<std::mutex> lock(map_lock_);
-
-	if (!devices_.count(device_name))
-	{
-		return false;
-	}
-
-	devices_[device_name].device->vcDevice().set_params(params);
 	devices_[device_name].heartbeat = true;
 
 	return true;

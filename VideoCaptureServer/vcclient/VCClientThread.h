@@ -17,16 +17,16 @@ namespace vc
 	{
 	public:
 
-		VCClientThread(const char* vc_device_name, const char* playlist_path, const char* playlist_url);
+		VCClientThread(const std::string& vc_device_name, const std::string& playlist_path, const std::string& playlist_url);
 		virtual ~VCClientThread();
 
-		VideoCaptureDevice& vcDevice();
+		std::shared_ptr<VideoCaptureDevice> vcDevice();
 
 	private:
 
 		void update() override;
 
-		VideoCaptureDevice vc_device_;
+		std::shared_ptr<VideoCaptureDevice> vc_device_;
 		JpegCallBack jpeg_callback_;
 
 		int event_id_;

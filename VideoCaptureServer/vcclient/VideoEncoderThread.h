@@ -43,6 +43,7 @@ namespace vc
 	private:
 
 		const std::string playlist_path_;
+		const std::string playlist_head_path_;
 		const std::string playlist_url_;
 
 		const int framerate_;

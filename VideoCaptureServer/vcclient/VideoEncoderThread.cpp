@@ -4,23 +4,24 @@ namespace vc
 {
     VideoEncoderThread::VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height) :
         MyThread(25),
-        output_format_(av_guess_format("hls", NULL, NULL)), codec_(avcodec_find_encoder(AV_CODEC_ID_H264)), framerate_(10),
-        frame_count_(0), playlist_path_(playlist_path), playlist_url_(playlist_url), wrote_first_frame_(false)
+        output_format_(av_guess_format("hls", NULL, NULL)), codec_(avcodec_find_encoder(AV_CODEC_ID_H264)),
+        framerate_(10), frame_count_(0), wrote_first_frame_(false),
+        playlist_path_(playlist_path), playlist_head_path_(playlist_path + "\\playlist.m3u8"), playlist_url_(playlist_url)
 	{
         std::cout << "Initialising FFMPEG video encoder" << std::endl;
 
         format_context_ = NULL;
-        avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_path_.c_str());
+        avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_head_path_.c_str());
 
         options_ = NULL;
         av_dict_set(&options_, "segment_format", "mpegts", 0);
         av_dict_set(&options_, "segment_list_type", "m3u8", 0);
-        av_dict_set(&options_, "segment_list", playlist_path_.c_str(), 0);
+        av_dict_set(&options_, "segment_list", playlist_head_path_.c_str(), 0);
         av_dict_set(&options_, "segment_list_flags", "cache+live", 0);
 
-        av_dict_set(&options_, "hls_time", "2", 0); // Set segment duration in seconds
+        av_dict_set(&options_, "hls_time", "1", 0); // Set segment duration in seconds
         av_dict_set(&options_, "hls_base_url", playlist_url_.c_str(), 0); // Set base url for .ts files
-        av_dict_set(&options_, "hls_list_size", "3", 0); // Set number of segments that are stored at single moment
+        av_dict_set(&options_, "hls_list_size", "5", 0); // Set number of segments that are stored at single moment
         av_dict_set(&options_, "hls_flags", "split_by_time+delete_segments", 0); // To split fragments by time (not by key frames) and to delete obsolete segments
 
         stream_ = avformat_new_stream(format_context_, NULL);

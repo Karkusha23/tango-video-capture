@@ -18,7 +18,7 @@ namespace vc
 		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 	}
 
-	VideoCaptureDevice::VideoCaptureDevice(const char* device_name, const char* playlist_path, const char* playlist_url, UIDisplayType display_type) :
+	VideoCaptureDevice::VideoCaptureDevice(const std::string& device_name, const std::string& playlist_path, const std::string& playlist_url, UIDisplayType display_type) :
 		device_name_(device_name), display_type_(display_type)
 	{
 		std::cout << "Entering VideoCaptureDevice constructor" << std::endl;
@@ -109,6 +109,16 @@ namespace vc
 	int VideoCaptureDevice::cam_height() const
 	{
 		return height_;
+	}
+
+	int VideoCaptureDevice::out_width() const
+	{
+		return out_width_;
+	}
+
+	int VideoCaptureDevice::out_height() const
+	{
+		return out_height_;
 	}
 
 	void VideoCaptureDevice::print_device_info(std::ostream& out)

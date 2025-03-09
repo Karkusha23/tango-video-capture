@@ -24,12 +24,12 @@ public:
 	// Remove '/' symbols from Tango device name
 	static std::string formatDeviceName(const std::string& device_name);
 
-	bool connectDevice(const std::string& device_name);
+	std::shared_ptr<vc::VideoCaptureDevice> connectDevice(const std::string& device_name);
+	std::shared_ptr<vc::VideoCaptureDevice> device(const std::string& device_name);
+
 	bool disconnectDevice(const std::string& device_name);
 	bool isDeviceConnected(const std::string& device_name);
 	bool heartBeat(const std::string& device_name);
-	bool getParams(const std::string& device_name, vc::VideoCaptureDevice::Params& params);
-	bool setParams(const std::string& device_name, const vc::VideoCaptureDevice::Params& params);
 
 private:
 
