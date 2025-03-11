@@ -1,45 +1,51 @@
-function httpGetRequest(url)
+class HLSClient
 {
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.open("GET", url, false);
-  xmlHttp.send(null);
-  return xmlHttp.responseText;
-}
-
-function httpPostRequest(url, body)
-{
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.open("POST", url, false);
-  xmlHttp.send(body)
-  return xmlHttp.responseText;
-}
-
-if(Hls.isSupported()) 
-{
-  var video = document.getElementById('video');
-  var data = document.getElementById('data');
-  var hls = new Hls();
-  var deviceName = data.getAttribute('device')
-  var deviceHeartbeatUrl = '/device/' + deviceName + '/heartbeat';
-  var deviceParamsUrl = '/device/' + deviceName + '/params';
-  var sourceUrl = '/media_no_cache/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8';
-  var sourceExistsUrl = '/media_exists/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8';
-  var readyToLoad = false;
-  var isFirstFragLoaded = false;
-  var deviceParams = {};
-  var deviceParamsEl = document.getElementById('params');
-
-  var isFullscreen = false
-
-  video.addEventListener('fullscreenchange', function()
+  // Synchronous HTTP GET REQUEST
+  static httpGetRequest(url)
   {
-    isFullscreen = document.fullscreenElement === video || document.webkitFullscreenElement === video;
-  })
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("GET", url, false);
+    xmlHttp.send(null);
+    return xmlHttp.responseText;
+  }
 
-  video.addEventListener('click', function(e)
+  // Synchronous HTTP POST REQUEST
+  static httpPostRequest(url, body)
   {
-    var rect = e.target.getBoundingClientRect();
-    const styles = window.getComputedStyle(video);
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("POST", url, false);
+    xmlHttp.send(body);
+    return xmlHttp.responseText;
+  }
+
+  static createVideoObj(id)
+  {
+    var videoEl = document.getElementById(id);
+    var result = {
+      el: videoEl,
+      width: Number(videoEl.getAttribute('width')), 
+      height: Number(videoEl.getAttribute('height')),
+    };
+    result.ratio = result.width / result.height;
+    return result;
+  }
+
+  static createDeviceUrls(dataID)
+  {
+    var deviceName = document.getElementById(dataID).getAttribute('device');
+    var result = {
+      heartbeat: '/device/' + deviceName + '/heartbeat',
+      params: '/device/' + deviceName + '/params',
+      source: '/media_no_cache/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8',
+      sourceExists: '/media_exists/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8'
+    };
+    return result;
+  }
+
+  static getVideoClickXY(video, clientX, clientY, isFullscreen)
+  {
+    var rect = video.el.getBoundingClientRect();
+    var scaleFullscreen = 1;
     var scaleX = 1;
     var scaleY = 1;
     var borderLeft = 0;
@@ -48,89 +54,28 @@ if(Hls.isSupported())
     var fullscreenMarginTop = 0;
     if (isFullscreen)
     {
-      var videoRatio = video.width / video.height;
       var fullscreenRatio = window.innerWidth / window.innerHeight;
-
-      if (videoRatio > fullscreenRatio)
+      if (video.ratio > fullscreenRatio)
       {
-        var scale = window.innerWidth / Number(video.getAttribute('width'))
-        fullscreenMarginTop = (window.innerHeight - Number(video.getAttribute('height')) * scale) / 2;
+        scaleFullscreen = window.innerWidth / video.width;
+        fullscreenMarginTop = (window.innerHeight - video.height * scaleFullscreen) / 2;
       }
-      else if (videoRatio < fullscreenRatio)
+      else if (video.ratio < fullscreenRatio)
       {
-        var scale = window.innerHeight / Number(video.getAttribute('height'))
-        fullscreenMarginLeft = (window.innerWidth - Number(video.getAttribute('width')) * scale) / 2;
+        scaleFullscreen = window.innerHeight / video.height
+        fullscreenMarginLeft = (window.innerWidth - video.width * scaleFullscreen) / 2;
       }
     }
     else
     {
-      var scaleX = parseFloat(styles.transform.split(',')[0].replace('matrix(', '')) || 1;
-      var scaleY = parseFloat(styles.transform.split(',')[3]) || 1;
-      var borderLeft = parseInt(styles.borderLeftWidth, 10) || 0;
-      var borderTop = parseInt(styles.borderTopWidth, 10) || 0;
+      const styles = window.getComputedStyle(video.el);
+      scaleX = parseFloat(styles.transform.split(',')[0].replace('matrix(', '')) || 1;
+      scaleY = parseFloat(styles.transform.split(',')[3]) || 1;
+      borderLeft = parseInt(styles.borderLeftWidth, 10) || 0;
+      borderTop = parseInt(styles.borderTopWidth, 10) || 0;
     }
-    var x = (e.clientX - rect.left - borderLeft - fullscreenMarginLeft) / scaleX;
-    var y = (e.clientY - rect.top - borderTop - fullscreenMarginTop) / scaleY;
-    console.log(x + ' ' + y)
-  })
-
-  /*document.getElementById('post_params').addEventListener('click', function() 
-  { 
-    var newDeviceParams = {
-      rulerStartX: Number(document.getElementById('ruler_start_x').value) ?? 0,
-      rulerStartY: Number(document.getElementById('ruler_start_y').value) ?? 0,
-      rulerEndX: Number(document.getElementById('ruler_end_x').value) ?? 0,
-      rulerEndY: Number(document.getElementById('ruler_end_y').value) ?? 0,
-      rulerLength: Number(document.getElementById('ruler_length').value) ?? 0,
-      threshold: Number(document.getElementById('threshold').value) ?? 25
-    }
-    httpPostRequest(deviceParamsUrl, JSON.stringify(newDeviceParams)); 
-  })*/
-
-  hls.on(Hls.Events.error, function(event, data)
-  {
-    hlsError = true;
-    console.log('Hls error');
-  })
-
-  hls.on(Hls.Events.FRAG_LOADED, function() 
-  {
-    if (!isFirstFragLoaded)
-    {
-      video.play()
-      firstFragLoaded = true
-    }
-  });
-
-  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  (async () => {
-    while (true)
-      {
-        await sleep(2000);
-        var paramsStr = httpGetRequest(deviceParamsUrl)
-        deviceParams = JSON.parse(paramsStr)
-        deviceParamsEl.innerHTML = JSON.stringify(deviceParams);
-        console.log('Heartbeat');
-      }
-    })();
-
-  const sleep2 = ms => new Promise(resolve => setTimeout(resolve, ms));
-  (async () => {
-    while (true)
-    {
-      var res = httpGetRequest(sourceExistsUrl);
-      if (res == '1')
-      {
-        break;
-      }
-      await sleep2(1000);
-    }
-
-    hls.loadSource(sourceUrl);
-    hls.attachMedia(video);
-  })();
-}
-else
-{
-    console.log('Hls is not supported!')
+    var x = (clientX - rect.left - borderLeft - fullscreenMarginLeft) / (scaleX * scaleFullscreen);
+    var y = (clientY - rect.top - borderTop - fullscreenMarginTop) / (scaleY * scaleFullscreen);
+    return {x: x, y: y};
+  }
 }
