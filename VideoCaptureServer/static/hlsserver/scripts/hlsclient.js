@@ -32,14 +32,17 @@ class HLSClient
 
   static createDeviceUrls(dataID)
   {
-    var deviceName = document.getElementById(dataID).getAttribute('device');
-    var result = {
-      heartbeat: '/device/' + deviceName + '/heartbeat',
+    var data = document.getElementById(dataID);
+    var deviceName = data.getAttribute('device');
+    var encoderName = data.getAttribute('encodername');
+    return {
+      name: deviceName,
+      encoder: encoderName,
+      heartbeat: '/encoder/' + encoderName + '/heartbeat',
       params: '/device/' + deviceName + '/params',
-      source: '/media_no_cache/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8',
-      sourceExists: '/media_exists/playlists/' + deviceName.replaceAll('/', '') + '/playlist.m3u8'
+      source: '/media_no_cache/playlists/' + encoderName + '/playlist.m3u8',
+      sourceExists: '/media_exists/playlists/' + encoderName + '/playlist.m3u8'
     };
-    return result;
   }
 
   static getVideoClickXY(video, clientX, clientY, isFullscreen)
@@ -76,6 +79,11 @@ class HLSClient
     }
     var x = (clientX - rect.left - borderLeft - fullscreenMarginLeft) / (scaleX * scaleFullscreen);
     var y = (clientY - rect.top - borderTop - fullscreenMarginTop) / (scaleY * scaleFullscreen);
-    return {x: x, y: y};
+    return {x: Math.round(x), y: Math.round(y)};
+  }
+
+  static distance(first, second)
+  {
+    return Math.sqrt(Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2))
   }
 }
