@@ -5,6 +5,7 @@
 #include <vector>
 #include <exception>
 #include <math.h>
+#include <map>
 
 #include <tango.h>
 
@@ -32,22 +33,24 @@ namespace vc
 	{
 	public:
 
-		enum class UIDisplayType 
+		enum class UIDisplayType
 		{
 			None, // Encoding raw frames without any UI
-			Regular, // Adding bounding rects and mass centers for contours, other info about contours is displayed above said rects
-			SidePanel // Same as regular, but frames are extended by width and have side panel on which additional info is displayed
+			NoText, // Adding bounding rects and mass centers for contours
+			SidePanel, // Same as regular, but frames are extended by width and have side panel on which additional info is displayed
+			Regular // Adding bounding rects and mass centers for contours, other info about contours is displayed above said rects
 		};
 
 		// device_name - name of device in Tango system
 		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
 		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
-		// to_show_ui - to show ui on host pc
-		VideoCaptureDevice(const std::string& device_name, const std::string& playlist_path, const std::string& playlist_url, UIDisplayType display_type);
+		// display_type - type of UI displayed on video frames
+		VideoCaptureDevice(const std::string& device_name);
 		~VideoCaptureDevice();
 
 		Tango::DeviceProxy& device();
 		std::string deviceName() const;
+		std::string deviceNameFormatted() const;
 		cv::Mat image();
 		unsigned char* image_data();
 		std::vector<unsigned char> jpg();
@@ -55,8 +58,8 @@ namespace vc
 		int cam_width() const;
 		int cam_height() const;
 
-		int out_width() const;
-		int out_height() const;
+		int out_width(UIDisplayType display_type) const;
+		int out_height(UIDisplayType display_type) const;
 
 		void print_device_info(std::ostream& out);
 		int get_device_int_property(const std::string& name);
@@ -78,27 +81,30 @@ namespace vc
 
 		void set_ruler_point_to(const cv::Point& point);
 
+		std::pair<int, std::string> add_encoder(UIDisplayType display_type, const std::string& playlist_base_path, const std::string& playlist_base_url);
+		bool remove_encoder(int id);
+		int encoder_count();
+
 	private:
 
 		Tango::DeviceProxy* device_;
 		std::string device_name_;
-
-		VideoEncoderThread* video_encoder_;
+		std::string device_name_formatted_;
 
 		cv::Mat image_;
+		cv::Mat image_pad_;
 		std::vector<unsigned char> jpg_;
+
+		vc::ContourInfo* contours_;
+		int contour_count_;
 
 		std::mutex image_lock_;
 		std::mutex params_lock_;
+		std::mutex encoders_lock_;
 
 		CameraMode cam_mode_;
 		int width_;
 		int height_;
-
-		int out_width_;
-		int out_height_;
-
-		const UIDisplayType display_type_;
 
 		Params params_;
 		Params params_prev_;
@@ -106,7 +112,7 @@ namespace vc
 		// Get device camera mode from database property
 		CameraMode get_device_camera_mode_();
 
-		void put_ui_on_frame_();
+		void put_frame_ui_(UIDisplayType display_type);
 
 		// Write threshold value from user trackbar to device attribute
 		void update_threshold_value_();
@@ -116,6 +122,17 @@ namespace vc
 
 		// Write ruler from UI to device attributes
 		void update_ruler_();
+
+		void write_to_encoders_(UIDisplayType display_type, const cv::Mat& image);
+
+		struct Encoder
+		{
+			VideoEncoderThread* encoder;
+			UIDisplayType displayType;
+		};
+
+		std::map<int, Encoder> encoders_;
+		std::multimap<UIDisplayType, VideoEncoderThread*> encoder_types_;
 	};
 
 	class JpegCallBack : public Tango::CallBack
@@ -125,8 +142,6 @@ namespace vc
 		JpegCallBack(const std::shared_ptr<VideoCaptureDevice>& dev) : Tango::CallBack(), dev_(dev) {}
 		void push_event(Tango::EventData* event_data) override { dev_->event_on_Jpeg_change(event_data); }
 	};
-
-	//void image_mouse_callback(int event, int x, int y, int flags, void* param);
 }
 
 #endif

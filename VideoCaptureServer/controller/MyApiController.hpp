@@ -67,14 +67,18 @@ public:
 		{
 			std::string device_name = controller->getDeviceName(request);
 
-			auto vc_device = controller->vccManager->connectDevice(device_name);
+			auto info = controller->vccManager->connectDevice(device_name);
+			std::string encoderName = info.first;
+			std::shared_ptr<vc::VideoCaptureDevice> vc_device = info.second;
 
 			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Can not connect to device");
 
-			std::string width = std::to_string(vc_device->out_width());
-			std::string height = std::to_string(vc_device->out_height());
+			std::string outwidth = std::to_string(vc_device->out_width(vc::VideoCaptureDevice::UIDisplayType::SidePanel));
+			std::string outheight = std::to_string(vc_device->out_height(vc::VideoCaptureDevice::UIDisplayType::SidePanel));
+			std::string camwidth = std::to_string(vc_device->cam_width());
+			std::string camheight = std::to_string(vc_device->cam_height());
 
-			oatpp::String response = formatText(pageTemplate, width.c_str(), height.c_str(), device_name.c_str());
+			oatpp::String response = formatText(pageTemplate, outwidth.c_str(), outheight.c_str(), device_name.c_str(), encoderName.c_str(), camwidth.c_str(), camheight.c_str());
 
 			return _return(controller->createResponse(Status::CODE_200, response->c_str()));
 		}
@@ -90,31 +94,9 @@ public:
 
 			std::shared_ptr<vc::VideoCaptureDevice> vc_device = controller->vccManager->device(device_name);
 
-			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Can not connect to device");
+			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Not connected to device");
 
 			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(VCParamsDTOInter(vc_device->get_params()))->c_str()));
-		}
-	};
-
-
-	// Heartbeat of Video Capture Device
-	// Fronted JS application send GET request to this address for server to know that this particular device is needed
-	// If no heartbeat sent for certain device in 10 seconds, thread that process this device is shut down
-	ENDPOINT_ASYNC("POST", "device/{domain}/{group}/{instance}/heartbeat", Heartbeat)
-	{
-		ENDPOINT_ASYNC_INIT(Heartbeat);
-
-		Action act() override
-		{
-			std::string device_name = controller->getDeviceName(request);
-
-			std::cout << "Heartbeat " << device_name << std::endl;
-
-			bool res = controller->vccManager->heartBeat(device_name);
-
-			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to device");
-
-			return _return(controller->createResponse(Status::CODE_200, "OK"));
 		}
 	};
 
@@ -125,14 +107,40 @@ public:
 
 		Action act() override
 		{
+			return request->readBodyToStringAsync().callbackTo(&PostDeviceParams::returnResponse);
+		}
+
+		Action returnResponse(const oatpp::String& body)
+		{
 			std::string device_name = controller->getDeviceName(request);
 
 			std::shared_ptr<vc::VideoCaptureDevice> vc_device = controller->vccManager->device(device_name);
 
 			OATPP_ASSERT_HTTP(vc_device, Status::CODE_400, "Not connected to device");
 
-			auto params = controller->apiObjectMapper->readFromString<VCParamsDTOInter>(request->readBodyToString());
+			VCParamsDTOInter params = controller->apiObjectMapper->readFromString<VCParamsDTOInter>(body);
 			vc_device->set_params(params);
+
+			return _return(controller->createResponse(Status::CODE_200, "OK"));
+		}
+	};
+
+	// Heartbeat of Video Capture Device
+	// Fronted JS application send GET request to this address for server to know that this particular device is needed
+	// If no heartbeat sent for certain device in 10 seconds, thread that process this device is shut down
+	ENDPOINT_ASYNC("POST", "encoder/{encodername}/heartbeat", Heartbeat)
+	{
+		ENDPOINT_ASYNC_INIT(Heartbeat);
+
+		Action act() override
+		{
+			std::string encoder_name = request->getPathVariable("encodername");
+
+			std::cout << "Heartbeat " << encoder_name << std::endl;
+
+			bool res = controller->vccManager->heartBeat(encoder_name);
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
 
 			return _return(controller->createResponse(Status::CODE_200, "OK"));
 		}
@@ -177,7 +185,7 @@ public:
 			oatpp::String filename = request->getPathTail();
 			OATPP_ASSERT_HTTP(filename, Status::CODE_400, "Filename is empty");
 			auto range = request->getHeader(Header::RANGE);
-			return _return(controller->getStaticFileResponse(filename, range, true));
+			return _return(controller->getStaticFileResponse(filename, range));
 		}
 	};
 

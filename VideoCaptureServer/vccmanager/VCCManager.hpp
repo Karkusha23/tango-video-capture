@@ -2,6 +2,7 @@
 #define VCCManager_hpp_included
 
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <mutex>
 
@@ -21,15 +22,16 @@ public:
 
 	static std::shared_ptr<VCCManager> createShared(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
 
-	// Remove '/' symbols from Tango device name
-	static std::string formatDeviceName(const std::string& device_name);
+	// Replaces '/' symbols with '-' symbols in Tango device name
+	static std::string formatDeviceName(const std::string& device_name, int encoder_id);
 
-	std::shared_ptr<vc::VideoCaptureDevice> connectDevice(const std::string& device_name);
+	std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> connectDevice(const std::string& device_name);
 	std::shared_ptr<vc::VideoCaptureDevice> device(const std::string& device_name);
+	std::shared_ptr<vc::VideoCaptureDevice> deviceByEncoderName(const std::string& device_encoder_name);
 
-	bool disconnectDevice(const std::string& device_name);
-	bool isDeviceConnected(const std::string& device_name);
-	bool heartBeat(const std::string& device_name);
+	bool disconnectDevice(const std::string& device_encoder_name);
+	bool isDeviceConnected(const std::string& device_encoder_name);
+	bool heartBeat(const std::string& device_encoder_name);
 
 private:
 
@@ -41,10 +43,12 @@ private:
 	struct DeviceNode
 	{
 		std::shared_ptr<vc::VCClientThread> device;
+		int encoder_id;
 		bool heartbeat;
 	};
 
-	std::unordered_map<std::string, DeviceNode> devices_;
+	std::unordered_map<std::string, DeviceNode> device_encoders_;
+	std::unordered_map<std::string, std::shared_ptr<vc::VCClientThread>> device_pool_;
 
 	std::mutex map_lock_;
 };

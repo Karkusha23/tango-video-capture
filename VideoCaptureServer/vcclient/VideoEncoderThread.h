@@ -13,6 +13,8 @@
 #include <atomic>
 #include <mutex>
 
+#include <experimental/filesystem>
+
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -39,6 +41,9 @@ namespace vc
 
 		// Write frame to the queue
 		void writeFrame(const cv::Mat& image);
+
+		const int width;
+		const int height;
 
 	private:
 

@@ -18,8 +18,7 @@ namespace vc
 		return std::sqrt((point1.x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
 	}
 
-	VideoCaptureDevice::VideoCaptureDevice(const std::string& device_name, const std::string& playlist_path, const std::string& playlist_url, UIDisplayType display_type) :
-		device_name_(device_name), display_type_(display_type)
+	VideoCaptureDevice::VideoCaptureDevice(const std::string& device_name) : device_name_(device_name)
 	{
 		std::cout << "Entering VideoCaptureDevice constructor" << std::endl;
 
@@ -42,20 +41,16 @@ namespace vc
 		width_ = get_device_int_property("Width");
 		height_ = get_device_int_property("Height");
 
-		if (display_type_ == UIDisplayType::SidePanel)
+		device_name_formatted_ = device_name;
+		while (true)
 		{
-			out_height_ = height_ >= 480 ? height_ : 480;
-			out_width_ = width_ + 200;
+			auto pos = device_name_formatted_.find("/");
+			if (pos == std::string::npos)
+			{
+				break;
+			}
+			device_name_formatted_.replace(pos, 1, "-");
 		}
-		else
-		{
-			out_width_ = width_;
-			out_height_ = height_;
-		}
-
-		image_ = cv::Mat(out_height_, out_width_, CV_8UC3);
-
-		video_encoder_ = new VideoEncoderThread(playlist_path, playlist_url, out_width_, out_height_);
 
 		std::cout << "VideoCaptureClient initialisation complete" << std::endl;
 	}
@@ -65,7 +60,14 @@ namespace vc
 		std::cout << "Entering VideoCaptureClient destructor" << std::endl;
 
 		delete device_;
-		delete video_encoder_;
+
+		{
+			std::lock_guard<std::mutex> lock(encoders_lock_);
+			for (auto& it : encoders_)
+			{
+				delete it.second.encoder;
+			}
+		}
 
 		std::cout << "VideoCaptureClient destruction complete" << std::endl;
 	}
@@ -78,6 +80,11 @@ namespace vc
 	std::string VideoCaptureDevice::deviceName() const
 	{
 		return device_name_;
+	}
+
+	std::string VideoCaptureDevice::deviceNameFormatted() const
+	{
+		return device_name_formatted_;
 	}
 
 	cv::Mat VideoCaptureDevice::image()
@@ -111,14 +118,26 @@ namespace vc
 		return height_;
 	}
 
-	int VideoCaptureDevice::out_width() const
+	int VideoCaptureDevice::out_width(UIDisplayType display_type) const
 	{
-		return out_width_;
+		switch (display_type)
+		{
+		case UIDisplayType::SidePanel:
+			return width_ + 300;
+		default:
+			return width_;
+		}
 	}
 
-	int VideoCaptureDevice::out_height() const
+	int VideoCaptureDevice::out_height(UIDisplayType display_type) const
 	{
-		return out_height_;
+		switch (display_type)
+		{
+		case UIDisplayType::SidePanel:
+			return height_ < 480 ? 480 : height_;
+		default:
+			return height_;
+		}
 	}
 
 	void VideoCaptureDevice::print_device_info(std::ostream& out)
@@ -167,75 +186,98 @@ namespace vc
 		std::memcpy(jpg_.data(), jpegAttr.EncodedSeq[0].encoded_data.NP_data(), jpegAttr.EncodedSeq[0].encoded_data.length() * sizeof(unsigned char));
 
 		image_ = cv::imdecode(jpg_, cv::IMREAD_COLOR);
-		cv::Mat image_conv;
-		cv::cvtColor(image_, image_conv, cv::COLOR_BGR2RGB);
-		image_ = image_conv;
 
-		put_ui_on_frame_();
-
-		video_encoder_->writeFrame(image_);
-	}
-
-	void VideoCaptureDevice::put_ui_on_frame_()
-	{
-		if (display_type_ == UIDisplayType::None)
 		{
-			return;
-		}
-
-		if (display_type_ == UIDisplayType::SidePanel)
-		{
-			cv::Mat image_pad;
-			cv::copyMakeBorder(image_, image_pad, 0, out_height_ - height_, 0, out_width_ - width_, cv::BORDER_CONSTANT);
-			image_ = image_pad;
+			cv::Mat image_conv;
+			cv::cvtColor(image_, image_conv, cv::COLOR_BGR2RGB);
+			image_ = std::move(image_conv);
 		}
 
 		Tango::DeviceAttribute contourAttr = device_->read_attribute("ContourInfo");
 
-		vc::ContourInfo* contours = reinterpret_cast<vc::ContourInfo*>(contourAttr.EncodedSeq[0].encoded_data.NP_data());
-		int contour_count = contourAttr.EncodedSeq[0].encoded_data.length() / sizeof(vc::ContourInfo);
+		contours_ = reinterpret_cast<vc::ContourInfo*>(contourAttr.EncodedSeq[0].encoded_data.NP_data());
+		contour_count_ = contourAttr.EncodedSeq[0].encoded_data.length() / sizeof(vc::ContourInfo);
 
-		for (int i = 0; i < contour_count; ++i)
+		write_to_encoders_(UIDisplayType::None, image_);
+		put_frame_ui_(UIDisplayType::NoText);
+		write_to_encoders_(UIDisplayType::NoText, image_);
+		put_frame_ui_(UIDisplayType::SidePanel);
+		write_to_encoders_(UIDisplayType::SidePanel, image_pad_);
+		put_frame_ui_(UIDisplayType::Regular);
+		write_to_encoders_(UIDisplayType::Regular, image_);
+	}
+
+	void VideoCaptureDevice::put_frame_ui_(UIDisplayType display_type)
+	{
+		if (display_type == UIDisplayType::None)
 		{
-			std::string text;
-
-			if (contours[i].area_abs > 0.0)
-			{
-				text += "Area:" + std::to_string((int)contours[i].area_abs);
-			}
-			else
-			{
-				text += "Area(px):" + std::to_string((int)contours[i].area_rel);
-			}
-
-			text += "; ";
-
-			if (contours[i].diameter_abs > 0.0)
-			{
-				text += "Diameter:" + std::to_string((int)contours[i].diameter_abs);
-			}
-			else
-			{
-				text += "Diameter(px):" + std::to_string((int)contours[i].diameter_rel);
-			}
-
-			cv::rectangle(image_, contours[i].bound_rect.tl(), contours[i].bound_rect.br(), TEXT_COLOR, 5);
-			cv::circle(image_, contours[i].center_mass, 3, TEXT_COLOR, -1);
-
-			switch (display_type_)
-			{
-			case UIDisplayType::Regular:
-				cv::putText(image_, text, { contours[i].bound_rect.x, contours[i].bound_rect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
-				break;
-			case UIDisplayType::SidePanel:
-				cv::putText(image_, text, { width_ + 2, 10 * (i + 1)}, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
-				break;
-			default:
-				break;
-			}
+			return;
 		}
 
-		cv::line(image_, params_.ruler.start, params_.ruler.end, RULER_COLOR, 2);
+		if (display_type == UIDisplayType::SidePanel)
+		{
+			cv::copyMakeBorder(image_, image_pad_, 0, out_height(UIDisplayType::SidePanel) - height_, 0, out_width(UIDisplayType::SidePanel) - width_, cv::BORDER_CONSTANT);
+		}
+
+		if (display_type == UIDisplayType::NoText)
+		{
+			for (int i = 0; i < contour_count_; ++i)
+			{
+				cv::rectangle(image_, contours_[i].bound_rect.tl(), contours_[i].bound_rect.br(), TEXT_COLOR, 5);
+				cv::circle(image_, contours_[i].center_mass, 3, TEXT_COLOR, -1);
+			}
+			cv::line(image_, params_.ruler.start, params_.ruler.end, RULER_COLOR, 2);
+		}
+		else
+		{
+
+			for (int i = 0; i < contour_count_; ++i)
+			{
+				std::string text;
+
+				if (contours_[i].area_abs > 0.0)
+				{
+					text += "Area:" + std::to_string((int)contours_[i].area_abs);
+				}
+				else
+				{
+					text += "Area(px):" + std::to_string((int)contours_[i].area_rel);
+				}
+
+				text += "; ";
+
+				if (contours_[i].diameter_abs > 0.0)
+				{
+					text += "Diameter:" + std::to_string((int)contours_[i].diameter_abs);
+				}
+				else
+				{
+					text += "Diameter(px):" + std::to_string((int)contours_[i].diameter_rel);
+				}
+
+				switch (display_type)
+				{
+				case UIDisplayType::Regular:
+					cv::putText(image_, text, { contours_[i].bound_rect.x, contours_[i].bound_rect.y - 5 }, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
+					break;
+				case UIDisplayType::SidePanel:
+					cv::putText(image_pad_, text, { width_ + 2, 10 * (i + 1) }, cv::FONT_HERSHEY_DUPLEX, 0.5, TEXT_COLOR);
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+
+	void VideoCaptureDevice::write_to_encoders_(UIDisplayType display_type, const cv::Mat& image)
+	{
+		std::lock_guard<std::mutex> lock(encoders_lock_);
+		auto range = encoder_types_.equal_range(display_type);
+		for (auto it = range.first; it != range.second; ++it)
+		{
+			it->second->writeFrame(image);
+		}
 	}
 
 	void VideoCaptureDevice::update()
@@ -262,6 +304,63 @@ namespace vc
 	{
 		cv::Point& ruler_point = distance(point, params_.ruler.start) < distance(point, params_.ruler.end) ? params_.ruler.start : params_.ruler.end;
 		ruler_point = point;
+	}
+
+	std::pair<int, std::string> VideoCaptureDevice::add_encoder(UIDisplayType display_type, const std::string& playlist_base_path, const std::string& playlist_base_url)
+	{
+		std::cout << "Adding new encoder" << std::endl;
+
+		std::lock_guard<std::mutex> lock(encoders_lock_);
+		int id = -1;
+		for (auto& it : encoders_)
+		{
+			if (it.first - id > 1)
+			{
+				break;
+			}
+			id = it.first;
+		}
+		++id;
+		std::string suffix = device_name_formatted_ + "-" + std::to_string(id);
+		VideoEncoderThread* encoder = new VideoEncoderThread(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/", out_width(display_type), out_height(display_type));
+		encoders_.insert({ id, Encoder({ encoder , display_type})});
+		encoder_types_.insert({ display_type, encoder });
+
+		std::cout << "Created new encoder with name " << suffix << std::endl;
+
+		return { id, suffix };
+	}
+
+	bool VideoCaptureDevice::remove_encoder(int id)
+	{
+		std::cout << "Removing encoder" << std::endl;
+
+		std::lock_guard<std::mutex> lock(encoders_lock_);
+		if (!encoders_.count(id))
+		{
+			return false;
+		}
+		VideoEncoderThread* encoder = encoders_[id].encoder;
+		for (auto it = encoder_types_.begin(); it != encoder_types_.end(); ++it)
+		{
+			if (it->second == encoder)
+			{
+				encoder_types_.erase(it);
+				break;
+			}
+		}
+		encoders_.erase(id);
+		delete encoder;
+
+		std::cout << "Encoder removed" << std::endl;
+
+		return true;
+	}
+
+	int VideoCaptureDevice::encoder_count()
+	{
+		std::lock_guard<std::mutex> lock(encoders_lock_);
+		return encoders_.size();
 	}
 
 	CameraMode VideoCaptureDevice::get_device_camera_mode_()

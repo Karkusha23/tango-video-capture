@@ -17,7 +17,7 @@ namespace vc
 	{
 	public:
 
-		VCClientThread(const std::string& vc_device_name, const std::string& playlist_path, const std::string& playlist_url);
+		VCClientThread(const std::string& vc_device_name);
 		virtual ~VCClientThread();
 
 		std::shared_ptr<VideoCaptureDevice> vcDevice();
