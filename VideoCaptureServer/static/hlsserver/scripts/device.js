@@ -4,6 +4,7 @@ if(Hls.isSupported())
     var deviceUrls = HLSClient.createDeviceUrls('data');
     var camWidth = Number(document.getElementById('data').getAttribute('camwidth'));
     var camHeight = Number(document.getElementById('data').getAttribute('camheight'));
+    var deviceParams = null;
     var deviceParamsEl = document.getElementById('params');
     var hls = new Hls();
 
