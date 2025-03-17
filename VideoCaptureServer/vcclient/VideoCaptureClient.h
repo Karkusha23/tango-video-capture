@@ -62,7 +62,6 @@ namespace vc
 		int out_height(UIDisplayType display_type) const;
 
 		void print_device_info(std::ostream& out);
-		int get_device_int_property(const std::string& name);
 
 		void event_on_Jpeg_change(Tango::EventData* event_data);
 
@@ -109,9 +108,6 @@ namespace vc
 		Params params_;
 		Params params_prev_;
 
-		// Get device camera mode from database property
-		CameraMode get_device_camera_mode_();
-
 		void put_frame_ui_(UIDisplayType display_type);
 
 		// Write threshold value from user trackbar to device attribute
@@ -141,6 +137,14 @@ namespace vc
 	public:
 		JpegCallBack(const std::shared_ptr<VideoCaptureDevice>& dev) : Tango::CallBack(), dev_(dev) {}
 		void push_event(Tango::EventData* event_data) override { dev_->event_on_Jpeg_change(event_data); }
+	};
+
+	class TangoDBWrapper
+	{
+		static Tango::DbData* data_;
+	public:
+		static int get_device_int_property(Tango::DeviceProxy* device, const std::string& property_name);
+		static CameraMode get_device_camera_mode(Tango::DeviceProxy* device);
 	};
 }
 

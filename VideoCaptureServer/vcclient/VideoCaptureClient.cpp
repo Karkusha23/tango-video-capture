@@ -26,7 +26,7 @@ namespace vc
 
 		std::cout << "Connected to device " << device_name_ << std::endl;
 
-		cam_mode_ = get_device_camera_mode_();
+		cam_mode_ = TangoDBWrapper::get_device_camera_mode(device_);
 
 		if (cam_mode_ == CameraMode::None)
 		{
@@ -38,8 +38,8 @@ namespace vc
 
 		params_.ruler = params_prev_.ruler = *reinterpret_cast<vc::Ruler*>(device_->read_attribute("Ruler").EncodedSeq[0].encoded_data.NP_data());
 
-		width_ = get_device_int_property("Width");
-		height_ = get_device_int_property("Height");
+		width_ = TangoDBWrapper::get_device_int_property(device_, "Width");
+		height_ = TangoDBWrapper::get_device_int_property(device_, "Height");
 
 		device_name_formatted_ = device_name;
 		while (true)
@@ -161,19 +161,6 @@ namespace vc
 			}
 			out << std::endl;
 		}
-	}
-
-	int VideoCaptureDevice::get_device_int_property(const std::string& name)
-	{
-		Tango::DbData* val_db = new Tango::DbData;
-
-		std::string name_str(name);
-
-		device_->get_property(name_str, *val_db);
-		std::string string_val;
-		(*val_db)[0] >> string_val;
-
-		return std::stoi(string_val);
 	}
 
 	void VideoCaptureDevice::event_on_Jpeg_change(Tango::EventData* event_data)
@@ -363,31 +350,6 @@ namespace vc
 		return encoders_.size();
 	}
 
-	CameraMode VideoCaptureDevice::get_device_camera_mode_()
-	{
-		Tango::DbData* mode_db = new Tango::DbData;
-		std::string mode_str = "Mode";
-		std::string mode;
-
-		device_->get_property(mode_str, *mode_db);
-		(*mode_db)[0] >> mode;
-
-		if (mode == "RGB" || mode == "rgb")
-		{
-			return CameraMode::RGB;
-		}
-		if (mode == "BGR" || mode == "bgr")
-		{
-			return CameraMode::BGR;
-		}
-		if (mode == "Grayscale" || mode == "grayscale")
-		{
-			return CameraMode::Grayscale;
-		}
-
-		return CameraMode::None;
-	}
-
 	void VideoCaptureDevice::update_threshold_value_()
 	{
 		if (params_.threshold == params_prev_.threshold)
@@ -435,5 +397,42 @@ namespace vc
 
 		Tango::DeviceAttribute ruler_write(ruler_str, ruler_encoded);
 		device_->write_attribute(ruler_write);
+	}
+
+	Tango::DbData* TangoDBWrapper::data_(new Tango::DbData);
+
+	int TangoDBWrapper::get_device_int_property(Tango::DeviceProxy* device, const std::string& property_name)
+	{
+		std::string name_str(property_name);
+
+		device->get_property(name_str, *data_);
+		std::string string_val;
+		(*data_)[0] >> string_val;
+
+		return std::stoi(string_val);
+	}
+
+	CameraMode TangoDBWrapper::get_device_camera_mode(Tango::DeviceProxy* device)
+	{
+		std::string mode_str = "Mode";
+		std::string mode;
+
+		device->get_property(mode_str, *data_);
+		(*data_)[0] >> mode;
+
+		if (mode == "RGB" || mode == "rgb")
+		{
+			return CameraMode::RGB;
+		}
+		if (mode == "BGR" || mode == "bgr")
+		{
+			return CameraMode::BGR;
+		}
+		if (mode == "Grayscale" || mode == "grayscale")
+		{
+			return CameraMode::Grayscale;
+		}
+
+		return CameraMode::None;
 	}
 }
