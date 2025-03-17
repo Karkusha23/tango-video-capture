@@ -400,9 +400,12 @@ namespace vc
 	}
 
 	Tango::DbData* TangoDBWrapper::data_(new Tango::DbData);
+	std::mutex TangoDBWrapper::data_lock_;
 
 	int TangoDBWrapper::get_device_int_property(Tango::DeviceProxy* device, const std::string& property_name)
 	{
+		std::lock_guard<std::mutex> lock(data_lock_);
+
 		std::string name_str(property_name);
 
 		device->get_property(name_str, *data_);
@@ -414,6 +417,8 @@ namespace vc
 
 	CameraMode TangoDBWrapper::get_device_camera_mode(Tango::DeviceProxy* device)
 	{
+		std::lock_guard<std::mutex> lock(data_lock_);
+
 		std::string mode_str = "Mode";
 		std::string mode;
 

@@ -142,6 +142,7 @@ namespace vc
 	class TangoDBWrapper
 	{
 		static Tango::DbData* data_;
+		static std::mutex data_lock_;
 	public:
 		static int get_device_int_property(Tango::DeviceProxy* device, const std::string& property_name);
 		static CameraMode get_device_camera_mode(Tango::DeviceProxy* device);
