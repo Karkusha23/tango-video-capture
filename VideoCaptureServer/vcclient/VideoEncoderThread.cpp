@@ -11,11 +11,11 @@ namespace vc
 	{
         std::cout << "Initialising FFMPEG video encoder" << std::endl;
 
-        if (std::experimental::filesystem::exists(playlist_path))
+        if (std::experimental::filesystem::exists(playlist_path_))
         {
-            std::experimental::filesystem::remove_all(playlist_path);
+            std::experimental::filesystem::remove_all(playlist_path_);
         }
-        std::experimental::filesystem::create_directory(playlist_path);
+        std::experimental::filesystem::create_directory(playlist_path_);
 
         format_context_ = NULL;
         avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_head_path_.c_str());
@@ -83,6 +83,11 @@ namespace vc
         avcodec_free_context(&codec_context_);
         avio_closep(&format_context_->pb);
         avformat_free_context(format_context_);
+
+        if (std::experimental::filesystem::exists(playlist_path_))
+        {
+            std::experimental::filesystem::remove_all(playlist_path_);
+        }
     }
 
     void VideoEncoderThread::writeFrame(const cv::Mat& image)

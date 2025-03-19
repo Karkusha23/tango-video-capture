@@ -1,14 +1,14 @@
 #include "VCCManager.hpp"
 
-VCCManager::VCCManager(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms) :
-	MyThread(connection_heartbeat_timeout_ms), playlists_path_(playlists_path), playlist_base_url_(playlist_base_url)
+VCCManager::VCCManager(const char* playlist_base_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms) :
+	MyThread(connection_heartbeat_timeout_ms), playlist_base_path_(playlist_base_path), playlist_base_url_(playlist_base_url)
 {
 	start();
 }
 
-std::shared_ptr<VCCManager> VCCManager::createShared(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms)
+std::shared_ptr<VCCManager> VCCManager::createShared(const char* playlist_base_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms)
 {
-	return std::make_shared<VCCManager>(playlists_path, playlist_base_url, connection_heartbeat_timeout_ms);
+	return std::make_shared<VCCManager>(playlist_base_path, playlist_base_url, connection_heartbeat_timeout_ms);
 }
 
 std::string VCCManager::formatDeviceName(const std::string& device_name, int encoder_id)
@@ -26,34 +26,34 @@ std::string VCCManager::formatDeviceName(const std::string& device_name, int enc
 	return result + "-" + std::to_string(encoder_id);
 }
 
-std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> VCCManager::connectDevice(const std::string& device_name)
+std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> VCCManager::connectDeviceEncoder(const std::string& device_name)
 {
 	std::lock_guard<std::mutex> lock(map_lock_);
 
-	std::shared_ptr<vc::VCClientThread> device;
+	std::shared_ptr<vc::VCClientThread> deviceThread;
 
 	if (device_pool_.count(device_name))
 	{
-		device = device_pool_[device_name];
+		deviceThread = device_pool_[device_name];
 	}
 	else
 	{
 		try
 		{
-			device = std::make_shared<vc::VCClientThread>(device_name);
+			deviceThread = std::make_shared<vc::VCClientThread>(device_name);
 		}
 		catch (...)
 		{
 			return { "", nullptr };
 		}
-		device_pool_.insert({ device_name, device });
+		device_pool_.insert({ device_name, deviceThread });
 	}
 
-	auto info = device->vcDevice()->add_encoder(vc::VideoCaptureDevice::UIDisplayType::SidePanel, playlists_path_, playlist_base_url_);
+	auto info = deviceThread->vcDevice()->add_encoder(vc::VideoCaptureDevice::UIDisplayType::SidePanel, playlist_base_path_, playlist_base_url_);
 
-	device_encoders_.insert({ info.second, { device, info.first, true } });
+	device_encoders_.insert({ info.second, { deviceThread, info.first, true } });
 
-	return { info.second, device->vcDevice() };
+	return { info.second, deviceThread->vcDevice() };
 }
 
 std::shared_ptr<vc::VideoCaptureDevice> VCCManager::device(const std::string& device_name)
@@ -82,7 +82,7 @@ std::shared_ptr<vc::VideoCaptureDevice> VCCManager::deviceByEncoderName(const st
 	return device_encoders_[device_encoder_name].device->vcDevice();
 }
 
-bool VCCManager::disconnectDevice(const std::string& device_encoder_name)
+bool VCCManager::disconnectDeviceEncoder(const std::string& device_encoder_name)
 {
 	std::lock_guard<std::mutex> lock(map_lock_);
 
@@ -97,12 +97,6 @@ bool VCCManager::disconnectDevice(const std::string& device_encoder_name)
 	node->device->vcDevice()->remove_encoder(node->encoder_id);
 	device_encoders_.erase(device_encoder_name);
 
-	std::string path = playlists_path_ + "\\" + device_encoder_name;
-	if (std::experimental::filesystem::exists(path))
-	{
-		std::experimental::filesystem::remove_all(path);
-	}
-
 	if (!device->encoder_count())
 	{
 		device_pool_.erase(device->deviceName());
@@ -111,7 +105,7 @@ bool VCCManager::disconnectDevice(const std::string& device_encoder_name)
 	return true;
 }
 
-bool VCCManager::isDeviceConnected(const std::string& device_encoder_name)
+bool VCCManager::isDeviceEncoderConnected(const std::string& device_encoder_name)
 {
 	std::lock_guard<std::mutex> lock(map_lock_);
 	return device_encoders_.count(device_encoder_name);
@@ -153,14 +147,8 @@ void VCCManager::update()
 		DeviceNode* node = &device_encoders_[it];
 		std::shared_ptr<vc::VideoCaptureDevice> device = node->device->vcDevice();
 
-		node->device->vcDevice()->remove_encoder(node->encoder_id);
+		device->remove_encoder(node->encoder_id);
 		device_encoders_.erase(it);
-
-		std::string path = playlists_path_ + "\\" + it;
-		if (std::experimental::filesystem::exists(path))
-		{
-			std::experimental::filesystem::remove_all(path);
-		}
 
 		if (!device->encoder_count())
 		{

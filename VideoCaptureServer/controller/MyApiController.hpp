@@ -67,7 +67,7 @@ public:
 		{
 			std::string device_name = controller->getDeviceName(request);
 
-			auto info = controller->vccManager->connectDevice(device_name);
+			auto info = controller->vccManager->connectDeviceEncoder(device_name);
 			std::string encoderName = info.first;
 			std::shared_ptr<vc::VideoCaptureDevice> vc_device = info.second;
 

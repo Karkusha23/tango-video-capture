@@ -18,26 +18,26 @@ public:
 
 	// playlists_path - path of folder that stores all the playlists from VideoCapture clients
 	// connection_heartbeat_timeout_ms - number of milliseconds that has to be passed without heartbeat from web client to shut down VCClientThread
-	VCCManager(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
+	VCCManager(const char* playlist_base_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
 
-	static std::shared_ptr<VCCManager> createShared(const char* playlists_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
+	static std::shared_ptr<VCCManager> createShared(const char* playlist_base_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
 
 	// Replaces '/' symbols with '-' symbols in Tango device name
 	static std::string formatDeviceName(const std::string& device_name, int encoder_id);
 
-	std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> connectDevice(const std::string& device_name);
+	std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> connectDeviceEncoder(const std::string& device_name);
 	std::shared_ptr<vc::VideoCaptureDevice> device(const std::string& device_name);
 	std::shared_ptr<vc::VideoCaptureDevice> deviceByEncoderName(const std::string& device_encoder_name);
 
-	bool disconnectDevice(const std::string& device_encoder_name);
-	bool isDeviceConnected(const std::string& device_encoder_name);
+	bool disconnectDeviceEncoder(const std::string& device_encoder_name);
+	bool isDeviceEncoderConnected(const std::string& device_encoder_name);
 	bool heartBeat(const std::string& device_encoder_name);
 
 private:
 
 	void update() override;
 
-	std::string playlists_path_;
+	std::string playlist_base_path_;
 	std::string playlist_base_url_;
 
 	struct DeviceNode
