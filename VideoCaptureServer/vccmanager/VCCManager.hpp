@@ -17,7 +17,7 @@ class VCCManager : public MyThread
 public:
 
 	// playlists_path - path of folder that stores all the playlists from VideoCapture clients
-	// connection_heartbeat_timeout_ms - number of milliseconds that has to be passed without heartbeat from web client to shut down VCClientThread
+	// connection_heartbeat_timeout_ms - number of milliseconds that has to be passed without heartbeat from web client to shut down VideoEncoderThread
 	VCCManager(const char* playlist_base_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);
 
 	static std::shared_ptr<VCCManager> createShared(const char* playlist_base_path, const char* playlist_base_url, time_t connection_heartbeat_timeout_ms);

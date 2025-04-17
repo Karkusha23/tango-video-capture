@@ -61,14 +61,6 @@ namespace vc
 
 		delete device_;
 
-		{
-			std::lock_guard<std::mutex> lock(encoders_lock_);
-			for (auto& it : encoders_)
-			{
-				delete it.second.encoder;
-			}
-		}
-
 		std::cout << "VideoCaptureClient destruction complete" << std::endl;
 	}
 
@@ -90,8 +82,7 @@ namespace vc
 	cv::Mat VideoCaptureDevice::image()
 	{
 		std::lock_guard<std::mutex> lock(image_lock_);
-		cv::Mat result = image_.clone();
-		return result;
+		return image_.clone();
 	}
 
 	std::vector<unsigned char> VideoCaptureDevice::jpg()
@@ -167,10 +158,10 @@ namespace vc
 	{
 		std::lock_guard<std::mutex> lock(image_lock_);
 
-		Tango::DeviceAttribute jpegAttr = device_->read_attribute("Jpeg");
+		Tango::DeviceAttribute* jpegAttr = event_data->attr_value;
 
-		jpg_.resize(jpegAttr.EncodedSeq[0].encoded_data.length() / sizeof(unsigned char));
-		std::memcpy(jpg_.data(), jpegAttr.EncodedSeq[0].encoded_data.NP_data(), jpegAttr.EncodedSeq[0].encoded_data.length() * sizeof(unsigned char));
+		jpg_.resize(jpegAttr->EncodedSeq[0].encoded_data.length() / sizeof(unsigned char));
+		std::memcpy(jpg_.data(), jpegAttr->EncodedSeq[0].encoded_data.NP_data(), jpegAttr->EncodedSeq[0].encoded_data.length() * sizeof(unsigned char));
 
 		image_ = cv::imdecode(jpg_, cv::IMREAD_COLOR);
 
@@ -180,10 +171,10 @@ namespace vc
 			image_ = std::move(image_conv);
 		}
 
-		Tango::DeviceAttribute contourAttr = device_->read_attribute("ContourInfo");
+		contourAttr_ = device_->read_attribute("ContourInfo");
 
-		contours_ = reinterpret_cast<vc::ContourInfo*>(contourAttr.EncodedSeq[0].encoded_data.NP_data());
-		contour_count_ = contourAttr.EncodedSeq[0].encoded_data.length() / sizeof(vc::ContourInfo);
+		contours_ = reinterpret_cast<vc::ContourInfo*>(contourAttr_.EncodedSeq[0].encoded_data.NP_data());
+		contour_count_ = contourAttr_.EncodedSeq[0].encoded_data.length() / sizeof(vc::ContourInfo);
 
 		write_to_encoders_(UIDisplayType::None, image_);
 		put_frame_ui_(UIDisplayType::NoText);
@@ -287,12 +278,6 @@ namespace vc
 		params_ = params;
 	}
 
-	void VideoCaptureDevice::set_ruler_point_to(const cv::Point& point)
-	{
-		cv::Point& ruler_point = distance(point, params_.ruler.start) < distance(point, params_.ruler.end) ? params_.ruler.start : params_.ruler.end;
-		ruler_point = point;
-	}
-
 	std::pair<int, std::string> VideoCaptureDevice::add_encoder(UIDisplayType display_type, const std::string& playlist_base_path, const std::string& playlist_base_url)
 	{
 		std::cout << "Adding new encoder" << std::endl;
@@ -309,7 +294,7 @@ namespace vc
 		}
 		++id;
 		std::string suffix = device_name_formatted_ + "-" + std::to_string(id);
-		VideoEncoderThread* encoder = new VideoEncoderThread(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/", out_width(display_type), out_height(display_type));
+		auto encoder = std::make_shared<VideoEncoderThread>(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/", out_width(display_type), out_height(display_type));
 		encoders_.insert({ id, Encoder({ encoder , display_type})});
 		encoder_types_.insert({ display_type, encoder });
 
@@ -327,17 +312,19 @@ namespace vc
 		{
 			return false;
 		}
-		VideoEncoderThread* encoder = encoders_[id].encoder;
-		for (auto it = encoder_types_.begin(); it != encoder_types_.end(); ++it)
+
 		{
-			if (it->second == encoder)
+			std::shared_ptr<VideoEncoderThread> encoder = encoders_[id].encoder;
+			for (auto it = encoder_types_.begin(); it != encoder_types_.end(); ++it)
 			{
-				encoder_types_.erase(it);
-				break;
+				if (it->second == encoder)
+				{
+					encoder_types_.erase(it);
+					break;
+				}
 			}
+			encoders_.erase(id);
 		}
-		encoders_.erase(id);
-		delete encoder;
 
 		std::cout << "Encoder removed" << std::endl;
 

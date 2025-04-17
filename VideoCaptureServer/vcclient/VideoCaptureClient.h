@@ -78,8 +78,6 @@ namespace vc
 		Params get_params();
 		void set_params(const Params& params);
 
-		void set_ruler_point_to(const cv::Point& point);
-
 		std::pair<int, std::string> add_encoder(UIDisplayType display_type, const std::string& playlist_base_path, const std::string& playlist_base_url);
 		bool remove_encoder(int id);
 		int encoder_count();
@@ -94,6 +92,7 @@ namespace vc
 		cv::Mat image_pad_;
 		std::vector<unsigned char> jpg_;
 
+		Tango::DeviceAttribute contourAttr_;
 		vc::ContourInfo* contours_;
 		int contour_count_;
 
@@ -108,6 +107,8 @@ namespace vc
 		Params params_;
 		Params params_prev_;
 
+		// Put ui on a frame according to display type
+		// Called several time consequently for every display type during execution of event_on_Jpeg_change() method
 		void put_frame_ui_(UIDisplayType display_type);
 
 		// Write threshold value from user trackbar to device attribute
@@ -123,12 +124,12 @@ namespace vc
 
 		struct Encoder
 		{
-			VideoEncoderThread* encoder;
+			std::shared_ptr<VideoEncoderThread> encoder;
 			UIDisplayType displayType;
 		};
 
 		std::map<int, Encoder> encoders_;
-		std::multimap<UIDisplayType, VideoEncoderThread*> encoder_types_;
+		std::multimap<UIDisplayType, std::shared_ptr<VideoEncoderThread>> encoder_types_;
 	};
 
 	class JpegCallBack : public Tango::CallBack

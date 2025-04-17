@@ -8,7 +8,7 @@
 
 #include "../filemanager/StaticFileManager.hpp"
 #include "../vccmanager/VCCManager.hpp"
-#include "../dtos/VCParamsInter.hpp"
+#include "../dtos/MyInters.hpp"
 
 // Api controller for Oat++ server that defines processable urls, corresponding actions and responses
 

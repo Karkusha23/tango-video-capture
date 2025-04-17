@@ -21,14 +21,18 @@ namespace vc
         avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_head_path_.c_str());
 
         options_ = NULL;
+
         av_dict_set(&options_, "segment_format", "mpegts", 0);
         av_dict_set(&options_, "segment_list_type", "m3u8", 0);
         av_dict_set(&options_, "segment_list", playlist_head_path_.c_str(), 0);
         av_dict_set(&options_, "segment_list_flags", "cache+live", 0);
+        
+        av_dict_set(&options_, "tune", "zerolatency", 0);
 
         av_dict_set(&options_, "hls_time", "1", 0); // Set segment duration in seconds
         av_dict_set(&options_, "hls_base_url", playlist_url_.c_str(), 0); // Set base url for .ts files
-        av_dict_set(&options_, "hls_list_size", "3", 0); // Set number of segments that are stored at single moments
+        av_dict_set(&options_, "hls_list_size", "5", 0); // Set number of segments that are stored at single moments
+        av_dict_set(&options_, "hls_delete_threshold ", "3", 0);
         av_dict_set(&options_, "hls_flags", "split_by_time+delete_segments", 0); // To split fragments by time (not by key frames) and to delete obsolete segments
 
         stream_ = avformat_new_stream(format_context_, NULL);
