@@ -5,7 +5,6 @@
 #include <oatpp/core/Types.hpp>
 
 #include "MyDTOs.hpp"
-#include "../vcclient/VideoCaptureClient.h"
 
 namespace __class
 {

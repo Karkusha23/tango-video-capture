@@ -22,10 +22,10 @@ oatpp::String getFileExtension(const oatpp::String& filename)
 
 oatpp::String formatText(const char* text, ...)
 {
-	char buffer[4097];
+	char buffer[8193];
 	va_list args;
 	va_start(args, text);
-	vsnprintf(buffer, 4096, text, args);
+	vsnprintf(buffer, 8192, text, args);
 	va_end(args);
 	return oatpp::String(buffer);
 }

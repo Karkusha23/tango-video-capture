@@ -125,6 +125,30 @@ public:
 		}
 	};
 
+	// Start record of video from device
+	ENDPOINT_ASYNC("POST", "device/{domain}/{group}/{instance}/startrec", StartRecording)
+	{
+		ENDPOINT_ASYNC_INIT(StartRecording);
+
+		Action act() override
+		{
+			return request->readBodyToStringAsync().callbackTo(&PostDeviceParams::returnResponse);
+		}
+
+		Action returnResponse(const oatpp::String& body)
+		{
+			std::string device_name = controller->getDeviceName(request);
+
+			auto info = controller->vccManager->startRecording(device_name);
+
+			std::string encoderName = info.first;
+
+			OATPP_ASSERT_HTTP(info.second, Status::CODE_400, "Not connected to device");
+
+			return _return(controller->createResponse(Status::CODE_200, encoderName.c_str()));
+		}
+	};
+
 	// Heartbeat of Video Capture Device
 	// Fronted JS application send GET request to this address for server to know that this particular device is needed
 	// If no heartbeat sent for certain device in 10 seconds, thread that process this device is shut down
@@ -139,6 +163,29 @@ public:
 			std::cout << "Heartbeat " << encoder_name << std::endl;
 
 			bool res = controller->vccManager->heartBeat(encoder_name);
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
+
+			return _return(controller->createResponse(Status::CODE_200, "OK"));
+		}
+	};
+
+	// Stop recording video from device
+	ENDPOINT_ASYNC("POST", "encoder/{encodername}/stoprec", StopRecording)
+	{
+		ENDPOINT_ASYNC_INIT(StopRecording);
+
+		Action act() override
+		{
+			return request->readBodyToStringAsync().callbackTo(&PostDeviceParams::returnResponse);
+		}
+
+
+		Action returnResponse(const oatpp::String& body)
+		{
+			std::string encoder_name = request->getPathVariable("encodername");
+
+			bool res = controller->vccManager->stopRecording(encoder_name);
 
 			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
 

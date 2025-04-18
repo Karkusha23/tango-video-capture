@@ -49,9 +49,39 @@ std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> VCCManager::conn
 		device_pool_.insert({ device_name, deviceThread });
 	}
 
-	auto info = deviceThread->vcDevice()->add_encoder(vc::VideoCaptureDevice::UIDisplayType::SidePanel, playlist_base_path_, playlist_base_url_);
+	auto info = deviceThread->vcDevice()->add_encoder(playlist_base_path_, playlist_base_url_, false, vc::VideoCaptureDevice::UIDisplayType::SidePanel);
 
-	device_encoders_.insert({ info.second, { deviceThread, info.first, true } });
+	device_encoders_.insert({ info.second, { deviceThread, info.first, false, true } });
+
+	return { info.second, deviceThread->vcDevice() };
+}
+
+std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> VCCManager::startRecording(const std::string& device_name)
+{
+	std::lock_guard<std::mutex> lock(map_lock_);
+
+	std::shared_ptr<vc::VCClientThread> deviceThread;
+
+	if (device_pool_.count(device_name))
+	{
+		deviceThread = device_pool_[device_name];
+	}
+	else
+	{
+		try
+		{
+			deviceThread = std::make_shared<vc::VCClientThread>(device_name);
+		}
+		catch (...)
+		{
+			return { "", nullptr };
+		}
+		device_pool_.insert({ device_name, deviceThread });
+	}
+
+	auto info = deviceThread->vcDevice()->add_encoder(playlist_base_path_, playlist_base_url_, true);
+	
+	device_encoders_.insert({ info.second, { deviceThread, info.first, true, true } });
 
 	return { info.second, deviceThread->vcDevice() };
 }
@@ -103,6 +133,27 @@ bool VCCManager::disconnectDeviceEncoder(const std::string& device_encoder_name)
 	}
 
 	return true;
+}
+
+bool VCCManager::stopRecording(const std::string& device_encoder_name)
+{
+	std::lock_guard<std::mutex> lock(map_lock_);
+
+	if (!device_encoders_.count(device_encoder_name))
+	{
+		return false;
+	}
+
+	DeviceNode* node = &device_encoders_[device_encoder_name];
+
+	if (!node->isRecording)
+	{
+		return false;
+	}
+
+	std::shared_ptr<vc::VideoCaptureDevice> device = node->device->vcDevice();
+
+	node->device->vcDevice()->remove_encoder(node->encoder_id);
 }
 
 bool VCCManager::isDeviceEncoderConnected(const std::string& device_encoder_name)

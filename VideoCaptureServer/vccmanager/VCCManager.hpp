@@ -26,10 +26,12 @@ public:
 	static std::string formatDeviceName(const std::string& device_name, int encoder_id);
 
 	std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> connectDeviceEncoder(const std::string& device_name);
+	std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> startRecording(const std::string& device_name);
 	std::shared_ptr<vc::VideoCaptureDevice> device(const std::string& device_name);
 	std::shared_ptr<vc::VideoCaptureDevice> deviceByEncoderName(const std::string& device_encoder_name);
 
 	bool disconnectDeviceEncoder(const std::string& device_encoder_name);
+	bool stopRecording(const std::string& device_encoder_name);
 	bool isDeviceEncoderConnected(const std::string& device_encoder_name);
 	bool heartBeat(const std::string& device_encoder_name);
 
@@ -44,6 +46,7 @@ private:
 	{
 		std::shared_ptr<vc::VCClientThread> device;
 		int encoder_id;
+		bool isRecording;
 		bool heartbeat;
 	};
 

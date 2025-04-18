@@ -2,9 +2,9 @@
 
 namespace vc
 {
-    VideoEncoderThread::VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height) :
+    VideoEncoderThread::VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int frame_width, int frame_height, bool toRecord) :
         MyThread(25),
-        width(cam_width), height(cam_height),
+        width(frame_width), height(frame_height), isRecording(toRecord),
         output_format_(av_guess_format("hls", NULL, NULL)), codec_(avcodec_find_encoder(AV_CODEC_ID_H264)),
         framerate_(10), frame_count_(0), wrote_first_frame_(false),
         playlist_path_(playlist_path), playlist_head_path_(playlist_path + "\\playlist.m3u8"), playlist_url_(playlist_url)
@@ -25,21 +25,29 @@ namespace vc
         av_dict_set(&options_, "segment_format", "mpegts", 0);
         av_dict_set(&options_, "segment_list_type", "m3u8", 0);
         av_dict_set(&options_, "segment_list", playlist_head_path_.c_str(), 0);
-        av_dict_set(&options_, "segment_list_flags", "cache+live", 0);
-        
-        av_dict_set(&options_, "tune", "zerolatency", 0);
 
-        av_dict_set(&options_, "hls_time", "1", 0); // Set segment duration in seconds
         av_dict_set(&options_, "hls_base_url", playlist_url_.c_str(), 0); // Set base url for .ts files
-        av_dict_set(&options_, "hls_list_size", "5", 0); // Set number of segments that are stored at single moments
-        av_dict_set(&options_, "hls_delete_threshold ", "3", 0);
-        av_dict_set(&options_, "hls_flags", "split_by_time+delete_segments", 0); // To split fragments by time (not by key frames) and to delete obsolete segments
+
+        if (!isRecording)
+        {
+            av_dict_set(&options_, "segment_list_flags", "cache+live", 0);
+            av_dict_set(&options_, "tune", "zerolatency", 0);
+
+            av_dict_set(&options_, "hls_time", "1", 0); // Set segment duration in seconds
+            av_dict_set(&options_, "hls_list_size", "5", 0); // Set number of segments that are stored at single moments
+            av_dict_set(&options_, "hls_delete_threshold ", "3", 0);
+            av_dict_set(&options_, "hls_flags", "split_by_time+delete_segments", 0); // To split fragments by time (not by key frames) and to delete obsolete segments
+        }
+        else
+        {
+            av_dict_set(&options_, "hls_time", "5", 0); // Set segment duration in seconds
+        }
 
         stream_ = avformat_new_stream(format_context_, NULL);
 
         codec_context_ = avcodec_alloc_context3(codec_);
-        codec_context_->width = cam_width;
-        codec_context_->height = cam_height;
+        codec_context_->width = width;
+        codec_context_->height = height;
         codec_context_->time_base = av_make_q(1, framerate_);
         codec_context_->framerate = av_make_q(framerate_, 1);
         codec_context_->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -71,6 +79,7 @@ namespace vc
     {
         stop();
 
+        if (!isRecording)
         {
             std::lock_guard<std::mutex> lock(queue_lock_);
 
@@ -81,6 +90,13 @@ namespace vc
                 delete[] query.data;
             }
         }
+        else
+        {
+            while (!queue_.empty())
+            {
+                write_frame_from_queue_();
+            }
+        }
 
         av_write_trailer(format_context_);
         av_frame_free(&av_frame_);
@@ -88,13 +104,16 @@ namespace vc
         avio_closep(&format_context_->pb);
         avformat_free_context(format_context_);
 
-        if (std::experimental::filesystem::exists(playlist_path_))
+        if (!isRecording)
         {
-            std::experimental::filesystem::remove_all(playlist_path_);
+            if (std::experimental::filesystem::exists(playlist_path_))
+            {
+                std::experimental::filesystem::remove_all(playlist_path_);
+            }
         }
     }
 
-    void VideoEncoderThread::writeFrame(const cv::Mat& image)
+    int64_t VideoEncoderThread::writeFrame(const cv::Mat& image)
     {
         auto timestamp = std::chrono::high_resolution_clock::now();
 
@@ -113,6 +132,8 @@ namespace vc
             std::lock_guard<std::mutex> lock(queue_lock_);
             queue_.push({ data, image.rows, image.cols, pts });
         }
+
+        return pts;
     }
 
     void VideoEncoderThread::write_frame_from_queue_()

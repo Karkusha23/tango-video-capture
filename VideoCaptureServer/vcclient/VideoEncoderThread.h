@@ -36,14 +36,15 @@ namespace vc
 
 		// playlist_path - full path of .m3u8 that will be generated along with .ts files in the same folder
 		// playlist_url - url that will be set in .m3u8 playlist. Media player will then get .ts files with this url
-		VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int cam_width, int cam_height);
+		VideoEncoderThread(const std::string& playlist_path, const std::string& playlist_url, int frame_width, int frame_height, bool toRecord = false);
 		virtual ~VideoEncoderThread();
 
 		// Write frame to the queue
-		void writeFrame(const cv::Mat& image);
+		int64_t writeFrame(const cv::Mat& image);
 
 		const int width;
 		const int height;
+		const bool isRecording;
 
 	private:
 

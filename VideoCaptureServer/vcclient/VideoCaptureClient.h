@@ -28,6 +28,12 @@ namespace vc
 	bool operator==(const Ruler& ruler1, const Ruler& ruler2);
 	double distance(const cv::Point& point1, const cv::Point& point2);
 
+	struct ContourStamp
+	{
+		int64_t pts;
+		std::vector<ContourInfo> infos;
+	};
+
 	// Wrapper for videocapture device proxy
 	class VideoCaptureDevice
 	{
@@ -78,7 +84,7 @@ namespace vc
 		Params get_params();
 		void set_params(const Params& params);
 
-		std::pair<int, std::string> add_encoder(UIDisplayType display_type, const std::string& playlist_base_path, const std::string& playlist_base_url);
+		std::pair<int, std::string> add_encoder(const std::string& playlist_base_path, const std::string& playlist_base_url, bool isRecording = false, UIDisplayType display_type = UIDisplayType::NoText);
 		bool remove_encoder(int id);
 		int encoder_count();
 
@@ -126,6 +132,7 @@ namespace vc
 		{
 			std::shared_ptr<VideoEncoderThread> encoder;
 			UIDisplayType displayType;
+			bool isRecording;
 		};
 
 		std::map<int, Encoder> encoders_;

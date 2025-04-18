@@ -278,13 +278,13 @@ namespace vc
 		params_ = params;
 	}
 
-	std::pair<int, std::string> VideoCaptureDevice::add_encoder(UIDisplayType display_type, const std::string& playlist_base_path, const std::string& playlist_base_url)
+	std::pair<int, std::string> VideoCaptureDevice::add_encoder(const std::string& playlist_base_path, const std::string& playlist_base_url, bool isRecording, UIDisplayType display_type)
 	{
 		std::cout << "Adding new encoder" << std::endl;
 
 		std::lock_guard<std::mutex> lock(encoders_lock_);
 		int id = -1;
-		for (auto& it : encoders_)
+		for (const auto& it : encoders_)
 		{
 			if (it.first - id > 1)
 			{
@@ -294,8 +294,9 @@ namespace vc
 		}
 		++id;
 		std::string suffix = device_name_formatted_ + "-" + std::to_string(id);
+		display_type = isRecording ? UIDisplayType::NoText : display_type;
 		auto encoder = std::make_shared<VideoEncoderThread>(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/", out_width(display_type), out_height(display_type));
-		encoders_.insert({ id, Encoder({ encoder , display_type})});
+		encoders_.insert({ id, Encoder({ encoder , display_type, isRecording })});
 		encoder_types_.insert({ display_type, encoder });
 
 		std::cout << "Created new encoder with name " << suffix << std::endl;
