@@ -35,13 +35,16 @@ class HLSClient
     var data = document.getElementById(dataID);
     var deviceName = data.getAttribute('device');
     var encoderName = data.getAttribute('encodername');
+    var record = data.getAttribute('record');
     return {
       name: deviceName,
       encoder: encoderName,
-      heartbeat: '/encoder/' + encoderName + '/heartbeat',
+      record: record,
+      heartbeat: encoderName ? '/encoder/' + encoderName + '/heartbeat' : null,
       params: '/device/' + deviceName + '/params',
-      source: '/media_no_cache/playlists/' + encoderName + '/playlist.m3u8',
-      sourceExists: '/media_exists/playlists/' + encoderName + '/playlist.m3u8'
+      source: '/media_no_cache/playlists/' + (encoderName ? encoderName : 'records/' + record) + '/playlist.m3u8',
+      sourceExists: '/media_exists/playlists/' + (encoderName ? encoderName : 'records/' + record) + '/playlist.m3u8',
+      startrec: deviceName ? 'device/' + deviceName + '/starrec' : null
     };
   }
 

@@ -8,6 +8,9 @@ if(Hls.isSupported())
     var deviceParamsEl = document.getElementById('params');
     var hls = new Hls();
 
+    var recbutton = document.getElementById('recbutton');
+    var recname;
+
     document.getElementById('title').innerHTML = deviceUrls.name;
     document.getElementById('h1').innerHTML = deviceUrls.name;
     
@@ -15,6 +18,12 @@ if(Hls.isSupported())
     var isFirstFragLoaded = false;
     var isFullscreen = false;
     var clickPoint = null;
+    var manifestParsed = false;
+
+    hls.on(Hls.Events.MANIFEST_PARSED, function()
+    {
+        manifestParsed = true;
+    });
 
     function readDeviceParams()
     {
@@ -46,6 +55,19 @@ if(Hls.isSupported())
         hlsError = true;
         console.log('Hls error');
     });
+
+    recbutton.addEventListener('click', function(e)
+    {
+        if (!recname)
+        {
+            recname = HLSClient.httpPostRequest(deviceUrls.startrec, '');
+            e.innerHTML = "Stop record";
+        }
+        else
+        {
+            window.location.replace('/record/' + recname + '/stoprec');
+        }
+    })
     
     (async () => {
         while (true)
@@ -62,15 +84,13 @@ if(Hls.isSupported())
         hls.loadSource(deviceUrls.source);
         hls.attachMedia(video.el);
 
-        while (true)
+        while (!(navigator.userActivation.hasBeenActive && manifestParsed))
         {
-            if (navigator.userActivation.hasBeenActive)
-            {
-                break;
-            }
             await new Promise(r => setTimeout(r, 500));
         }
-        video.el.currentTime = video.el.duration - 3 > 0 ? video.el.duration - 3 : 0;
+        await new Promise(r => setTimeout(r, 2000));
+        
+        video.el.currentTime = video.el.duration - 5 > 0 ? video.el.duration - 5 : 0;
         video.el.play();
     })();
     
