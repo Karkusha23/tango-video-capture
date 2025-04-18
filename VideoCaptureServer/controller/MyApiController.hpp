@@ -141,11 +141,11 @@ public:
 
 			auto info = controller->vccManager->startRecording(device_name);
 
-			std::string encoderName = info.first;
+			std::string recordName = info.first;
 
 			OATPP_ASSERT_HTTP(info.second, Status::CODE_400, "Not connected to device");
 
-			return _return(controller->createResponse(Status::CODE_200, encoderName.c_str()));
+			return _return(controller->createResponse(Status::CODE_200, recordName.c_str()));
 		}
 	};
 
@@ -170,26 +170,47 @@ public:
 		}
 	};
 
+	ENDPOINT_ASYNC("GET", "record/{recordname}", Record)
+	{
+		ENDPOINT_ASYNC_INIT(Record);
+
+		const char* pageTemplate = controller->staticFileManager->getFile("templates/record.html")->c_str();
+
+		Action act() override
+		{
+			std::string record = request->getPathVariable("recordname");
+
+			bool recordExists = controller->staticFileManager->isFileExists(std::string("playlists/records/") + record);
+
+			OATPP_ASSERT_HTTP(recordExists, Status::CODE_400, "Record does not exists!");
+
+			oatpp::String info = controller->staticFileManager->getFile(std::string("playlists/records/") + record + "/info.txt");
+			int width, height;
+			std::istringstream(info) >> width >> height;
+
+			oatpp::String response = formatText(pageTemplate, std::to_string(width).c_str(), std::to_string(height).c_str(), record.c_str());
+
+			return _return(controller->createResponse(Status::CODE_200, response->c_str()));
+		}
+	};
+
 	// Stop recording video from device
-	ENDPOINT_ASYNC("POST", "encoder/{encodername}/stoprec", StopRecording)
+	ENDPOINT_ASYNC("GET", "record/{recordname}/stoprec", StopRecording)
 	{
 		ENDPOINT_ASYNC_INIT(StopRecording);
 
 		Action act() override
 		{
-			return request->readBodyToStringAsync().callbackTo(&PostDeviceParams::returnResponse);
-		}
+			std::string record_name = request->getPathVariable("recordname");
 
-
-		Action returnResponse(const oatpp::String& body)
-		{
-			std::string encoder_name = request->getPathVariable("encodername");
-
-			bool res = controller->vccManager->stopRecording(encoder_name);
+			bool res = controller->vccManager->stopRecording(record_name);
 
 			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
 
-			return _return(controller->createResponse(Status::CODE_200, "OK"));
+			auto response = controller->createResponse(Status::CODE_200, "");
+			response->putHeader("Location", (std::string("/record/") + record_name).c_str());
+
+			return _return(response);
 		}
 	};
 

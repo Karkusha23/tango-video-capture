@@ -294,6 +294,10 @@ namespace vc
 		}
 		++id;
 		std::string suffix = device_name_formatted_ + "-" + std::to_string(id);
+		if (isRecording)
+		{
+			suffix += "-" + std::to_string(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count());
+		}
 		display_type = isRecording ? UIDisplayType::NoText : display_type;
 		auto encoder = std::make_shared<VideoEncoderThread>(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/", out_width(display_type), out_height(display_type));
 		encoders_.insert({ id, Encoder({ encoder , display_type, isRecording })});

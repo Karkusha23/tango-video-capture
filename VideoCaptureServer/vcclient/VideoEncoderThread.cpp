@@ -111,6 +111,12 @@ namespace vc
                 std::experimental::filesystem::remove_all(playlist_path_);
             }
         }
+        else
+        {
+            std::ofstream outFile(playlist_path_ + "\\info.txt");
+            outFile << width << ' ' << height;
+            outFile.close();
+        }
     }
 
     int64_t VideoEncoderThread::writeFrame(const cv::Mat& image)
