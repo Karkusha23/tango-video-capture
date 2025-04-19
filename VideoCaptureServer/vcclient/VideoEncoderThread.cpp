@@ -17,6 +17,13 @@ namespace vc
         }
         std::experimental::filesystem::create_directories(playlist_path_);
 
+        if (isRecording)
+        {
+            std::ofstream outFile(playlist_path_ + "\\info.txt");
+            outFile << width << ' ' << height;
+            outFile.close();
+        }
+
         format_context_ = NULL;
         avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_head_path_.c_str());
 
@@ -112,12 +119,6 @@ namespace vc
             {
                 std::experimental::filesystem::remove_all(playlist_path_);
             }
-        }
-        else
-        {
-            std::ofstream outFile(playlist_path_ + "\\info.txt");
-            outFile << width << ' ' << height;
-            outFile.close();
         }
     }
 

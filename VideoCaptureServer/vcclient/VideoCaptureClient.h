@@ -16,6 +16,7 @@
 #include <vc/camproc.h>
 
 #include "VideoEncoderThread.h"
+#include "VideoInfoWriter.h"
 
 namespace vc
 {
@@ -27,12 +28,6 @@ namespace vc
 
 	bool operator==(const Ruler& ruler1, const Ruler& ruler2);
 	double distance(const cv::Point& point1, const cv::Point& point2);
-
-	struct ContourStamp
-	{
-		int64_t pts;
-		std::vector<ContourInfo> infos;
-	};
 
 	// Wrapper for videocapture device proxy
 	class VideoCaptureDevice
@@ -99,7 +94,7 @@ namespace vc
 		std::vector<unsigned char> jpg_;
 
 		Tango::DeviceAttribute contourAttr_;
-		vc::ContourInfo* contours_;
+		std::vector<vc::ContourInfo> contours_;
 		int contour_count_;
 
 		std::mutex image_lock_;
@@ -127,16 +122,12 @@ namespace vc
 		void update_ruler_();
 
 		void write_to_encoders_(UIDisplayType display_type, const cv::Mat& image);
+		void write_to_infowriter_(int id, int64_t pts);
 
-		struct Encoder
-		{
-			std::shared_ptr<VideoEncoderThread> encoder;
-			UIDisplayType displayType;
-			bool isRecording;
-		};
+		std::map<int, std::pair<std::shared_ptr<VideoEncoderThread>, UIDisplayType>> encoders_;
+		std::multimap<UIDisplayType, std::pair<std::shared_ptr<VideoEncoderThread>, int>> encoder_types_;
 
-		std::map<int, Encoder> encoders_;
-		std::multimap<UIDisplayType, std::shared_ptr<VideoEncoderThread>> encoder_types_;
+		std::map<int, std::shared_ptr<VideoInfoWriter>> cinfo_writers_;
 	};
 
 	class JpegCallBack : public Tango::CallBack

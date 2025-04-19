@@ -132,11 +132,6 @@ public:
 
 		Action act() override
 		{
-			return request->readBodyToStringAsync().callbackTo(&StartRecording::returnResponse);
-		}
-
-		Action returnResponse(const oatpp::String& body)
-		{
 			std::string device_name = controller->getDeviceName(request);
 
 			auto info = controller->vccManager->startRecording(device_name);

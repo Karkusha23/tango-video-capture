@@ -7,8 +7,6 @@
 #include <opencv2/core.hpp>
 #include <vc/camproc.h>
 
-#include "../vcclient/VideoCaptureClient.h"
-
 #include OATPP_CODEGEN_BEGIN(DTO)
 
 namespace dto
@@ -82,18 +80,10 @@ namespace dto
 	oatpp::Object<dto::Point> todto(const cv::Point& val);
 	oatpp::Object<dto::Rect> todto(const cv::Rect& val);
 	oatpp::Object<dto::Ruler> todto(const vc::Ruler& val);
-	oatpp::Object<dto::VCParams> todto(const vc::VideoCaptureDevice::Params& val);
-	oatpp::Object<dto::ContourInfo> todto(const vc::ContourInfo& val);
-	oatpp::Object<dto::ContourStamp> todto(const vc::ContourStamp& val);
-	oatpp::Object<dto::ContourList> todto(const std::vector<vc::ContourStamp>& val);
 
 	cv::Point fromdto(const oatpp::Object<dto::Point>& obj);
 	cv::Rect fromdto(const oatpp::Object<dto::Rect>& obj);
 	vc::Ruler fromdto(const oatpp::Object<dto::Ruler>& obj);
-	vc::VideoCaptureDevice::Params fromdto(const oatpp::Object<dto::VCParams>& obj);
-	vc::ContourInfo fromdto(const oatpp::Object<dto::ContourInfo>& obj);
-	vc::ContourStamp fromdto(const oatpp::Object<dto::ContourStamp>& obj);
-	std::vector<vc::ContourStamp> fromdto(const oatpp::Object<dto::ContourList>& obj);
 }
 
 #endif

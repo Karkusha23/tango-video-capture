@@ -173,8 +173,9 @@ namespace vc
 
 		contourAttr_ = device_->read_attribute("ContourInfo");
 
-		contours_ = reinterpret_cast<vc::ContourInfo*>(contourAttr_.EncodedSeq[0].encoded_data.NP_data());
 		contour_count_ = contourAttr_.EncodedSeq[0].encoded_data.length() / sizeof(vc::ContourInfo);
+		contours_.resize(contour_count_);
+		std::memcpy(contours_.data(), contourAttr_.EncodedSeq[0].encoded_data.NP_data(), contour_count_ * sizeof(vc::ContourInfo));
 
 		write_to_encoders_(UIDisplayType::None, image_);
 		put_frame_ui_(UIDisplayType::NoText);
@@ -254,8 +255,17 @@ namespace vc
 		auto range = encoder_types_.equal_range(display_type);
 		for (auto it = range.first; it != range.second; ++it)
 		{
-			it->second->writeFrame(image);
+			int64_t pts = it->second.first->writeFrame(image);
+			if (it->second.first->isRecording)
+			{
+				write_to_infowriter_(it->second.second, pts);
+			}
 		}
+	}
+
+	void VideoCaptureDevice::write_to_infowriter_(int id, int64_t pts)
+	{
+		cinfo_writers_[id]->writeContourInfo({ pts, contours_ });
 	}
 
 	void VideoCaptureDevice::update()
@@ -300,8 +310,12 @@ namespace vc
 		}
 		display_type = isRecording ? UIDisplayType::NoText : display_type;
 		auto encoder = std::make_shared<VideoEncoderThread>(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/", out_width(display_type), out_height(display_type), isRecording);
-		encoders_.insert({ id, Encoder({ encoder , display_type, isRecording })});
-		encoder_types_.insert({ display_type, encoder });
+		encoders_.insert({ id, { encoder , display_type } });
+		encoder_types_.insert({ display_type, { encoder, id } });
+		if (isRecording)
+		{
+			cinfo_writers_.insert({ id, std::make_shared<VideoInfoWriter>(playlist_base_path + "\\" + suffix) });
+		}
 
 		std::cout << "Created new encoder with name " << suffix << std::endl;
 
@@ -319,10 +333,10 @@ namespace vc
 		}
 
 		{
-			std::shared_ptr<VideoEncoderThread> encoder = encoders_[id].encoder;
+			std::shared_ptr<VideoEncoderThread> encoder = encoders_[id].first;
 			for (auto it = encoder_types_.begin(); it != encoder_types_.end(); ++it)
 			{
-				if (it->second == encoder)
+				if (it->second.first == encoder)
 				{
 					encoder_types_.erase(it);
 					break;

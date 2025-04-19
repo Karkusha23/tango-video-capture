@@ -5,15 +5,22 @@
 #include <oatpp/core/Types.hpp>
 
 #include "MyDTOs.hpp"
+#include "../vcclient/VideoCaptureClient.h"
+
+namespace dto
+{
+	oatpp::Object<dto::VCParams> todto(const vc::VideoCaptureDevice::Params& val);
+	vc::VideoCaptureDevice::Params fromdto(const oatpp::Object<dto::VCParams>& obj);
+}
 
 namespace __class
 {
 	class VCParamsInter;
-	class ContourInfoInter;
+	class ContourListInter;
 }
 
 typedef oatpp::data::mapping::type::Primitive<vc::VideoCaptureDevice::Params, __class::VCParamsInter> VCParamsDTOInter;
-typedef oatpp::data::mapping::type::Primitive<vc::ContourInfo, __class::ContourInfoInter> ContourInfoDTOInter;
+typedef oatpp::data::mapping::type::Primitive<std::vector<vc::ContourStamp>, __class::ContourListInter> ContourListDTOInter;
 
 namespace __class
 {
@@ -34,13 +41,13 @@ namespace __class
 		static oatpp::Type* getType();
 	};
 
-	class ContourInfoInter
+	class ContourListInter
 	{
-		class Inter : public oatpp::Type::Interpretation<ContourInfoDTOInter, oatpp::Object<dto::ContourInfo>>
+		class Inter : public oatpp::Type::Interpretation<ContourListDTOInter, oatpp::Object<dto::ContourList>>
 		{
 		public:
-			oatpp::Object<dto::ContourInfo> interpret(const ContourInfoDTOInter& value) const override;
-			ContourInfoDTOInter reproduce(const oatpp::Object<dto::ContourInfo>& obj) const override;
+			oatpp::Object<dto::ContourList> interpret(const ContourListDTOInter& value) const override;
+			ContourListDTOInter reproduce(const oatpp::Object<dto::ContourList>& obj) const override;
 		};
 
 		static oatpp::Type::Info getTypeInfo();
