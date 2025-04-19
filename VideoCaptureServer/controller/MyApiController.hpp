@@ -132,7 +132,7 @@ public:
 
 		Action act() override
 		{
-			return request->readBodyToStringAsync().callbackTo(&PostDeviceParams::returnResponse);
+			return request->readBodyToStringAsync().callbackTo(&StartRecording::returnResponse);
 		}
 
 		Action returnResponse(const oatpp::String& body)
@@ -141,11 +141,11 @@ public:
 
 			auto info = controller->vccManager->startRecording(device_name);
 
-			std::string recordName = info.first;
-
 			OATPP_ASSERT_HTTP(info.second, Status::CODE_400, "Not connected to device");
 
-			return _return(controller->createResponse(Status::CODE_200, recordName.c_str()));
+			std::cout << "Start recording " << info.first << std::endl;
+
+			return _return(controller->createResponse(Status::CODE_200, info.first.c_str()));
 		}
 	};
 
@@ -184,7 +184,7 @@ public:
 
 			OATPP_ASSERT_HTTP(recordExists, Status::CODE_400, "Record does not exists!");
 
-			oatpp::String info = controller->staticFileManager->getFile(std::string("playlists/records/") + record + "/info.txt");
+			oatpp::String info = controller->staticFileManager->getFile(std::string("playlists/records/") + record + "/info.txt", true);
 			int width, height;
 			std::istringstream(info) >> width >> height;
 
@@ -207,7 +207,7 @@ public:
 
 			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
 
-			auto response = controller->createResponse(Status::CODE_200, "");
+			auto response = controller->createResponse(Status::CODE_302, "");
 			response->putHeader("Location", (std::string("/record/") + record_name).c_str());
 
 			return _return(response);

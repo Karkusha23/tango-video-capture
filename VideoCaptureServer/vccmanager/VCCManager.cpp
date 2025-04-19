@@ -154,6 +154,8 @@ bool VCCManager::stopRecording(const std::string& device_encoder_name)
 	std::shared_ptr<vc::VideoCaptureDevice> device = node->device->vcDevice();
 
 	node->device->vcDevice()->remove_encoder(node->encoder_id);
+
+	return true;
 }
 
 bool VCCManager::isDeviceEncoderConnected(const std::string& device_encoder_name)

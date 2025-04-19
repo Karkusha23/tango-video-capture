@@ -15,7 +15,7 @@ namespace vc
         {
             std::experimental::filesystem::remove_all(playlist_path_);
         }
-        std::experimental::filesystem::create_directory(playlist_path_);
+        std::experimental::filesystem::create_directories(playlist_path_);
 
         format_context_ = NULL;
         avformat_alloc_output_context2(&format_context_, output_format_, NULL, playlist_head_path_.c_str());
@@ -79,22 +79,24 @@ namespace vc
     {
         stop();
 
-        if (!isRecording)
         {
             std::lock_guard<std::mutex> lock(queue_lock_);
 
-            while (!queue_.empty())
+            if (!isRecording)
             {
-                WriteQuery query = queue_.front();
-                queue_.pop();
-                delete[] query.data;
+                while (!queue_.empty())
+                {
+                    WriteQuery query = queue_.front();
+                    queue_.pop();
+                    delete[] query.data;
+                }
             }
-        }
-        else
-        {
-            while (!queue_.empty())
+            else
             {
-                write_frame_from_queue_();
+                while (!queue_.empty())
+                {
+                    write_frame_from_queue_();
+                }
             }
         }
 
