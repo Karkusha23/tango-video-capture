@@ -9,7 +9,8 @@ if(Hls.isSupported())
     var hls = new Hls();
 
     var recbutton = document.getElementById('recbutton');
-    var recname;
+    var recname = null;
+    console.log(recbutton);
 
     document.getElementById('title').innerHTML = deviceUrls.name;
     document.getElementById('h1').innerHTML = deviceUrls.name;
@@ -61,13 +62,14 @@ if(Hls.isSupported())
         if (!recname)
         {
             recname = HLSClient.httpPostRequest(deviceUrls.startrec, '');
-            e.innerHTML = "Stop record";
+            recbutton.innerHTML = "Stop record";
+            console.log('Start rec ' + recname);
         }
         else
         {
             window.location.replace('/record/' + recname + '/stoprec');
         }
-    })
+    });
     
     (async () => {
         while (true)
@@ -99,6 +101,10 @@ if(Hls.isSupported())
         {
             await new Promise(r => setTimeout(r, 1000));
             HLSClient.httpPostRequest(deviceUrls.heartbeat, '');
+            if (recname)
+            {
+                HLSClient.httpPostRequest('/encoder/' + recname + '/heartbeat');
+            }
             readDeviceParams();
             if (clickPoint != null)
             {

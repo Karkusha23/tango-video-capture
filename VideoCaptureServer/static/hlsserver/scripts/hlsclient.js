@@ -44,7 +44,7 @@ class HLSClient
       params: '/device/' + deviceName + '/params',
       source: '/media_no_cache/playlists/' + (encoderName ? encoderName : 'records/' + record) + '/playlist.m3u8',
       sourceExists: '/media_exists/playlists/' + (encoderName ? encoderName : 'records/' + record) + '/playlist.m3u8',
-      startrec: deviceName ? 'device/' + deviceName + '/starrec' : null
+      startrec: deviceName ? '/device/' + deviceName + '/startrec' : null
     };
   }
 
