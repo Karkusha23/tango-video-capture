@@ -314,7 +314,7 @@ namespace vc
 		encoder_types_.insert({ display_type, { encoder, id } });
 		if (isRecording)
 		{
-			cinfo_writers_.insert({ id, std::make_shared<VideoInfoWriter>(playlist_base_path + "\\" + suffix) });
+			cinfo_writers_.insert({ id, std::make_shared<VideoInfoWriter>(playlist_base_path + "\\" + suffix, playlist_base_url + suffix + "/")});
 		}
 
 		std::cout << "Created new encoder with name " << suffix << std::endl;

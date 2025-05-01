@@ -1,11 +1,15 @@
 #include "VideoInfoWriter.h"
+#include <iostream>
 
 namespace vc
 {
-	VideoInfoWriter::VideoInfoWriter(const std::string& info_path) :
-		MyThread(10000), info_path_(info_path), header_path_(info_path + "\\ciheader.header"), file_count_(0)
+	VideoInfoWriter::VideoInfoWriter(const std::string& info_path, const std::string& info_base_url) :
+		MyThread(20000), info_path_(info_path), header_path_(info_path + "\\ciheader.header"), info_base_url_(info_base_url), file_count_(0)
 	{
 		infolist1_ = dto::ContourList::createShared();
+		infolist1_->list = {};
+
+		std::cout << info_base_url_ << std::endl;
 
 		if (!std::experimental::filesystem::exists(info_path_))
 		{
@@ -30,16 +34,18 @@ namespace vc
 		infolist1_->list->push_back(dto::todto(info));
 	}
 
-	void VideoInfoWriter::add_to_header_(const std::string& string)
+	void VideoInfoWriter::add_to_header_(const std::string& fragmentFilename, int64_t startPts)
 	{
-		std::lock_guard<std::mutex> lock(header_lock_);
 		header_ofstream_.open(header_path_, std::ios::app);
-		header_ofstream_ << string << ',';
+		header_ofstream_ << (info_base_url_ + fragmentFilename + " ") << startPts << '\n';
 		header_ofstream_.close();
 	}
 
 	void VideoInfoWriter::write_to_file_()
 	{
+		infolist2_ = dto::ContourList::createShared();
+		infolist2_->list = {};
+
 		{
 			std::lock_guard<std::mutex> lock(list_lock_);
 			std::swap(infolist1_, infolist2_);
@@ -50,11 +56,14 @@ namespace vc
 			return;
 		}
 
-		std::string filename = "cipiece" + std::to_string(++file_count_) + ".json";
-		std::ofstream outFile(info_path_ + "\\" + filename);
-		outFile << std::string(apiObjectMapper_->writeToString(infolist2_));
-		outFile.close();
-		add_to_header_(filename);
+		{
+			std::lock_guard<std::mutex> lock(file_lock_);
+			std::string filename = "cifragment" + std::to_string(++file_count_) + ".json";
+			std::ofstream outFile(info_path_ + "\\" + filename);
+			outFile << apiObjectMapper_->writeToString(infolist2_->list)->c_str();
+			outFile.close();
+			add_to_header_(filename, infolist2_->list[0]->pts.getValue(0));
+		}
 	}
 
 	void VideoInfoWriter::update()

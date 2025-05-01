@@ -71,6 +71,21 @@ namespace dto
 
 		DTO_FIELD(List<Object<dto::ContourStamp>>, list);
 	};
+
+	/*class VideoInfoHeaderEntry : public oatpp::DTO
+	{
+		DTO_INIT(VideoInfoHeaderEntry, DTO);
+
+		DTO_FIELD(String, url);
+		DTO_FIELD(Int64, startPts);
+	};
+
+	class VideoInfoHeader : public oatpp::DTO
+	{
+		DTO_INIT(VideoInfoHeader, DTO);
+
+		DTO_FIELD(List<Object<dto::VideoInfoHeaderEntry>>, list);
+	};*/
 }
 
 #include OATPP_CODEGEN_END(DTO)

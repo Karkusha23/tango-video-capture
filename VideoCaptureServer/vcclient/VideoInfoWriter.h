@@ -24,7 +24,7 @@ namespace vc
 	{
 	public:
 
-		VideoInfoWriter(const std::string& info_path);
+		VideoInfoWriter(const std::string& info_path, const std::string& info_base_url);
 		virtual ~VideoInfoWriter();
 
 		void writeContourInfo(const ContourStamp& info);
@@ -33,6 +33,7 @@ namespace vc
 
 		const std::string info_path_;
 		const std::string header_path_;
+		const std::string info_base_url_;
 
 		OATPP_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, apiObjectMapper_);
 
@@ -42,11 +43,11 @@ namespace vc
 		int file_count_;
 
 		std::mutex list_lock_;
-		std::mutex header_lock_;
+		std::mutex file_lock_;
 
 		std::ofstream header_ofstream_;
 
-		void add_to_header_(const std::string& string);
+		void add_to_header_(const std::string& fragmentFilename, int64_t startPts);
 		void write_to_file_();
 
 		void update() override;

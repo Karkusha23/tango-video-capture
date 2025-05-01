@@ -79,7 +79,7 @@ std::pair<std::string, std::shared_ptr<vc::VideoCaptureDevice>> VCCManager::star
 		device_pool_.insert({ device_name, deviceThread });
 	}
 
-	auto info = deviceThread->vcDevice()->add_encoder(playlist_base_path_ + "\\records", playlist_base_url_ + "/records/", true);
+	auto info = deviceThread->vcDevice()->add_encoder(playlist_base_path_ + "\\records", playlist_base_url_ + "records/", true);
 	
 	device_encoders_.insert({ info.second, { deviceThread, info.first, true, true } });
 
