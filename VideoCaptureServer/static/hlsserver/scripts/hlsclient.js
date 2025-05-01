@@ -44,7 +44,8 @@ class HLSClient
       params: '/device/' + deviceName + '/params',
       source: '/media_no_cache/playlists/' + (encoderName ? encoderName : 'records/' + record) + '/playlist.m3u8',
       sourceExists: '/media_exists/playlists/' + (encoderName ? encoderName : 'records/' + record) + '/playlist.m3u8',
-      startrec: deviceName ? '/device/' + deviceName + '/startrec' : null
+      startrec: deviceName ? '/device/' + deviceName + '/startrec' : null,
+      recordDataHeader: record ? '/media_no_cache/playlists/records/' + record + '/ciheader.header' : null
     };
   }
 
@@ -88,5 +89,57 @@ class HLSClient
   static distance(first, second)
   {
     return Math.sqrt(Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2))
+  }
+}
+
+class VideoInfoReceiver
+{
+  #headerUrl;
+  #fragmentInfo;
+  #fragments;
+
+  constructor(headerUrl)
+  {
+    this.#headerUrl = headerUrl;
+    this.#fragmentInfo = [];
+    this.#fragments = [];
+    var headerStr = HLSClient.httpGetRequest(this.#headerUrl).split('\n');
+    for (var i = 0; i < headerStr.length; ++i)
+    {
+      if (headerStr[i] == '')
+      {
+        continue;
+      }
+      var info = headerStr[i].split(' ');
+      this.#fragmentInfo.push({ url: info[0], pts: Number(info[1]) });
+      this.#fragments.push(null);
+    }
+  }
+
+  getInfo(videoPlayTime)
+  {
+    var pts = videoPlayTime * 1000;
+    console.log(pts);
+    var index;
+    for (index = 0; index < this.#fragmentInfo.length - 1; ++index)
+    {
+      if (pts >= this.#fragmentInfo[index].pts && pts < this.#fragmentInfo[index + 1].pts)
+      {
+        break;
+      }
+    }
+    if (!this.#fragments[index])
+    {
+      this.#fragments[index] = JSON.parse(HLSClient.httpGetRequest(this.#fragmentInfo[index].url));
+    }
+    var frag = this.#fragments[index]
+    for (var i = 0; i < frag.length - 1; ++i)
+    {
+      if (pts >= frag[i].pts && pts < frag[i + 1].pts)
+      {
+        return frag[i].infos;
+      }
+    }
+    return frag[frag.length - 1].infos;
   }
 }
