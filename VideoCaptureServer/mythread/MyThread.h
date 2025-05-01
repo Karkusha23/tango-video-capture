@@ -4,6 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <condition_variable>
 
 // Abstract base class for thread
 // Thread calls update() function every update_time_ms milliseconds
@@ -28,14 +29,17 @@ private:
 
 	std::thread* thread_;
 	std::atomic_bool is_started_;
-	std::atomic_bool to_exit_;
+	std::atomic_bool to_terminate_;
 
 	std::mutex thread_mutex_;
+	std::mutex terminate_mutex_;
 
-	const time_t update_time_ms_;
+	std::condition_variable terminate_cv_;
 
-	void run_();
+	const std::chrono::milliseconds update_time_ms_;
 
+	void run_with_sleep_();
+	void run_with_cv_();
 };
 
 #endif
