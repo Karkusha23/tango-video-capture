@@ -87,3 +87,25 @@ bool StaticFileManager::isFileExists(const std::string& filename)
 {
 	return std::experimental::filesystem::exists(path_ / filename);
 }
+
+std::vector<std::string> StaticFileManager::getRecordsNames(int entries)
+{
+	std::vector<std::string> result;
+
+	for (const auto& entry : std::experimental::filesystem::directory_iterator(path_ / "playlists\\records"))
+	{
+		if (entry.path().has_extension())
+		{
+			continue;
+		}
+
+		result.push_back(entry.path().filename().string());
+
+		if (result.size() == entries)
+		{
+			break;
+		}
+	}
+
+	return result;
+}

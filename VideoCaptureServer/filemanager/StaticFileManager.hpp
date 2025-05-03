@@ -30,6 +30,8 @@ public:
 	// If file exists in sever file folder
 	bool isFileExists(const std::string& filename);
 
+	std::vector<std::string> getRecordsNames(int entries = 0);
+
 private:
 
 	oatpp::String path_string_;

@@ -165,6 +165,26 @@ public:
 		}
 	};
 
+	// Stop recording video from device
+	ENDPOINT_ASYNC("GET", "record/{recordname}/stoprec", StopRecording)
+	{
+		ENDPOINT_ASYNC_INIT(StopRecording);
+
+		Action act() override
+		{
+			std::string record_name = request->getPathVariable("recordname");
+
+			bool res = controller->vccManager->stopRecording(record_name);
+
+			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
+
+			auto response = controller->createResponse(Status::CODE_302, "");
+			response->putHeader("Location", (std::string("/record/") + record_name).c_str());
+
+			return _return(response);
+		}
+	};
+
 	ENDPOINT_ASYNC("GET", "record/{recordname}", Record)
 	{
 		ENDPOINT_ASYNC_INIT(Record);
@@ -189,23 +209,22 @@ public:
 		}
 	};
 
-	// Stop recording video from device
-	ENDPOINT_ASYNC("GET", "record/{recordname}/stoprec", StopRecording)
+	ENDPOINT_ASYNC("GET", "recordlist", RecordList)
 	{
-		ENDPOINT_ASYNC_INIT(StopRecording);
+		ENDPOINT_ASYNC_INIT(RecordList);
 
 		Action act() override
 		{
-			std::string record_name = request->getPathVariable("recordname");
+			std::vector<std::string> recordList = controller->staticFileManager->getRecordsNames();
 
-			bool res = controller->vccManager->stopRecording(record_name);
+			oatpp::List<oatpp::String> recordListObj = oatpp::List<oatpp::String>::createShared();
 
-			OATPP_ASSERT_HTTP(res, Status::CODE_400, "Not connected to specified encoder");
+			for (const auto& record : recordList)
+			{
+				recordListObj->push_back(record.c_str());
+			}
 
-			auto response = controller->createResponse(Status::CODE_302, "");
-			response->putHeader("Location", (std::string("/record/") + record_name).c_str());
-
-			return _return(response);
+			return _return(controller->createResponse(Status::CODE_200, controller->apiObjectMapper->writeToString(recordListObj)));
 		}
 	};
 
